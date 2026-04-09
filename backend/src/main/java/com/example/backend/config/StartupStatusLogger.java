@@ -1,9 +1,7 @@
 package com.example.backend.config;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
-import java.util.Arrays;
 
 import javax.sql.DataSource;
 
@@ -32,19 +30,16 @@ public class StartupStatusLogger implements ApplicationListener<ApplicationReady
 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
-        String appName = environment.getProperty("spring.application.name", "application");
         int port = resolvePort();
-        String[] activeProfiles = environment.getActiveProfiles();
-        String profileText = activeProfiles.length == 0 ? "default" : Arrays.toString(activeProfiles);
 
-        log.info("================ Startup Status ================");
-        log.info("Application : {}", appName);
-        log.info("Port        : {}", port);
-        log.info("Profiles    : {}", profileText);
-        log.info("Base URL    : http://localhost:{}", port);
+        String databaseName = resolveDatabaseName();
+        if (databaseName != null) {
+            log.info("MySQL {} connected", databaseName);
+        } else {
+            log.info("MySQL connection failed");
+        }
 
-        logDatabaseStatus();
-        log.info("================================================");
+        log.info("Port {}", port);
     }
 
     private int resolvePort() {
@@ -56,28 +51,36 @@ public class StartupStatusLogger implements ApplicationListener<ApplicationReady
         return environment.getProperty("server.port", Integer.class, 8080);
     }
 
-    private void logDatabaseStatus() {
+    private String resolveDatabaseName() {
         if (dataSource == null) {
-            log.info("Database    : DOWN (No DataSource configured)");
-            return;
+            return null;
         }
 
         try (Connection connection = dataSource.getConnection()) {
-            DatabaseMetaData metadata = connection.getMetaData();
-            log.info("Database    : UP");
-            log.info("DB Product  : {} {}", metadata.getDatabaseProductName(), metadata.getDatabaseProductVersion());
-            log.info("DB URL      : {}", sanitizeJdbcUrl(metadata.getURL()));
-            log.info("DB User     : {}", metadata.getUserName());
+            String catalog = connection.getCatalog();
+            if (catalog != null && !catalog.isBlank()) {
+                return catalog;
+            }
+
+            return parseDatabaseNameFromUrl(environment.getProperty("spring.datasource.url"));
         } catch (SQLException ex) {
-            log.info("Database    : DOWN ({})", ex.getMessage());
+            return null;
         }
     }
 
-    private String sanitizeJdbcUrl(String jdbcUrl) {
+    private String parseDatabaseNameFromUrl(String jdbcUrl) {
         if (jdbcUrl == null || jdbcUrl.isBlank()) {
-            return "unknown";
+            return "unknown_db";
         }
 
-        return jdbcUrl.replaceAll("([?&](?:password|pwd)=)[^&]*", "$1****");
+        int schemeIndex = jdbcUrl.indexOf("//");
+        int pathStart = jdbcUrl.indexOf('/', schemeIndex >= 0 ? schemeIndex + 2 : 0);
+        if (pathStart < 0 || pathStart + 1 >= jdbcUrl.length()) {
+            return "unknown_db";
+        }
+
+        String dbPart = jdbcUrl.substring(pathStart + 1);
+        int paramsStart = dbPart.indexOf('?');
+        return paramsStart >= 0 ? dbPart.substring(0, paramsStart) : dbPart;
     }
 }
