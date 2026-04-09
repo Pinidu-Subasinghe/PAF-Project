@@ -32,6 +32,8 @@ target/
 build/
 .gradle/
 
+# Node modules gitignore
+
 # Logs
 logs
 npm-debug.log*
