@@ -34,9 +34,9 @@ public class StartupStatusLogger implements ApplicationListener<ApplicationReady
 
         String databaseName = resolveDatabaseName();
         if (databaseName != null) {
-            log.info("MySQL {} connected", databaseName);
+            log.info("Database {} connected", databaseName);
         } else {
-            log.info("MySQL connection failed");
+            log.info("Database connection failed");
         }
 
         log.info("Port {}", port);
