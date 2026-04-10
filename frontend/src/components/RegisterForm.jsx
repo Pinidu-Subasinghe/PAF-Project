@@ -1,7 +1,5 @@
 import { useState } from 'react'
-
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080').replace(/\/$/, '')
-const REGISTER_ENDPOINT = `${API_BASE_URL}/api/v1/auth/register`
+import { registerUser } from '../api/api'
 
 const initialFormState = {
   fullName: '',
@@ -29,14 +27,6 @@ function validateForm(formValues) {
   }
 
   return ''
-}
-
-function readErrorMessage(payload) {
-  if (payload && typeof payload === 'object' && typeof payload.message === 'string') {
-    return payload.message
-  }
-
-  return 'Registration failed. Please try again.'
 }
 
 export default function RegisterForm() {
@@ -75,19 +65,7 @@ export default function RegisterForm() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch(REGISTER_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-
-      const responseBody = await response.json().catch(() => null)
-
-      if (!response.ok) {
-        throw new Error(readErrorMessage(responseBody))
-      }
+      const responseBody = await registerUser(payload)
 
       setFormValues(initialFormState)
       setRegisteredUser({
