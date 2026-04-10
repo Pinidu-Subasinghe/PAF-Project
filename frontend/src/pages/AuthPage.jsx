@@ -1,4 +1,5 @@
 import RegisterForm from '../components/RegisterForm'
+import LoginForm from '../components/LoginForm'
 
 export default function AuthPage() {
   return (
@@ -12,17 +13,29 @@ export default function AuthPage() {
         className="pointer-events-none absolute -bottom-36 -right-36 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle_at_40%_40%,#bfdcfb_0%,#80aef3_52%,transparent_75%)]"
       ></div>
 
-      <section className="relative z-10 w-full max-w-2xl rounded-3xl border border-amber-900/20 bg-white/90 p-6 shadow-[0_22px_52px_rgba(82,56,25,0.18)] backdrop-blur-sm sm:p-10">
+      <section className="relative z-10 w-full max-w-6xl rounded-3xl border border-amber-900/20 bg-white/90 p-6 shadow-[0_22px_52px_rgba(82,56,25,0.18)] backdrop-blur-sm sm:p-10">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">Authentication</p>
-        <h1 className="mt-2 font-serif text-3xl leading-tight text-stone-900 sm:text-5xl">
-          Register Your Account
-        </h1>
+        <h1 className="mt-2 font-serif text-3xl leading-tight text-stone-900 sm:text-5xl">Access Your Account</h1>
         <p className="mt-3 text-sm text-stone-600 sm:text-base">
-          Sign in will be added later. For now, create a user account.
+          Register a new account or sign in with your existing credentials.
         </p>
 
-        <div className="mt-6">
-          <RegisterForm />
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <article className="rounded-2xl border border-amber-700/15 bg-amber-50/35 p-5">
+            <h2 className="font-serif text-2xl text-stone-900">Register</h2>
+            <p className="mt-1 text-sm text-stone-600">Create a user account with full name, email, and password.</p>
+            <div className="mt-4">
+              <RegisterForm />
+            </div>
+          </article>
+
+          <article className="rounded-2xl border border-sky-700/15 bg-sky-50/35 p-5">
+            <h2 className="font-serif text-2xl text-stone-900">Login</h2>
+            <p className="mt-1 text-sm text-stone-600">Sign in to request a token for protected API access.</p>
+            <div className="mt-4">
+              <LoginForm />
+            </div>
+          </article>
         </div>
       </section>
     </main>

@@ -35,3 +35,10 @@ export async function registerUser(registerPayload) {
     body: registerPayload,
   })
 }
+
+export async function loginUser(loginPayload) {
+  return request('/api/v1/auth/login', {
+    method: 'POST',
+    body: loginPayload,
+  })
+}
