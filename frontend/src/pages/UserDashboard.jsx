@@ -100,6 +100,17 @@ function PlaceholderPanel({ title, description, items }) {
 	)
 }
 
+function readRequestedTab(navItems) {
+	const queryParams = new URLSearchParams(window.location.search)
+	const requestedTab = queryParams.get('tab')?.trim()
+
+	if (!requestedTab) {
+		return null
+	}
+
+	return navItems.some((item) => item.id === requestedTab) ? requestedTab : null
+}
+
 export default function UserDashboard() {
 	const [session, setSession] = useState(() => readAuthSession())
 
@@ -138,10 +149,36 @@ export default function UserDashboard() {
 
 	const role = session?.role ?? 'USER'
 	const navItems = useMemo(() => (role === 'ADMIN' ? adminNavItems : userNavItems), [role])
-	const [activeItemId, setActiveItemId] = useState(navItems[0].id)
+	const [activeItemId, setActiveItemId] = useState(() => readRequestedTab(navItems) ?? navItems[0].id)
 
 	useEffect(() => {
-		setActiveItemId(navItems[0].id)
+		setActiveItemId((currentActiveItemId) => {
+			const requestedTab = readRequestedTab(navItems)
+			if (requestedTab) {
+				return requestedTab
+			}
+
+			return navItems.some((item) => item.id === currentActiveItemId)
+				? currentActiveItemId
+				: navItems[0].id
+		})
+	}, [navItems])
+
+	useEffect(() => {
+		const syncActiveItemWithLocation = () => {
+			const requestedTab = readRequestedTab(navItems)
+			if (requestedTab) {
+				setActiveItemId(requestedTab)
+			}
+		}
+
+		window.addEventListener('popstate', syncActiveItemWithLocation)
+		window.addEventListener('hashchange', syncActiveItemWithLocation)
+
+		return () => {
+			window.removeEventListener('popstate', syncActiveItemWithLocation)
+			window.removeEventListener('hashchange', syncActiveItemWithLocation)
+		}
 	}, [navItems])
 
 	const contentById = {

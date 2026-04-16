@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { HiOutlineUserCircle } from 'react-icons/hi2'
+import { HiOutlineBell, HiOutlineUserCircle } from 'react-icons/hi2'
+import NotificationFloatingModal from './NotificationFloatingModal'
+import { getMyNotifications, markNotificationAsRead } from '../api/api'
 import {
   authSessionChangeEvent,
   clearAuthSession,
@@ -18,25 +20,48 @@ function navigateTo(pathname) {
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
+function resolveNotificationDestination(notification) {
+  const target = notification?.actionTarget?.trim()
+  if (target === 'change-password') {
+    return '/dashboard?tab=change-password'
+  }
+
+  return '/dashboard'
+}
+
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const [isNotificationMenuOpen, setIsNotificationMenuOpen] = useState(false)
+  const [isMobileView, setIsMobileView] = useState(() => window.innerWidth < 768)
+  const [notifications, setNotifications] = useState([])
+  const [isNotificationsLoading, setIsNotificationsLoading] = useState(false)
+  const [notificationsError, setNotificationsError] = useState('')
   const [authSession, setAuthSession] = useState(() => readAuthSession())
   const profileMenuRef = useRef(null)
+  const notificationMenuRef = useRef(null)
 
   const isAuthenticated = Boolean(authSession)
   const profileName = authSession?.fullName?.trim() || authSession?.email || 'Campus User'
   const profileEmail = authSession?.email || 'Logged in'
+  const unreadNotificationCount = notifications.length
+  const hasNotifications = unreadNotificationCount > 0
+  const unreadBadgeLabel = unreadNotificationCount > 9 ? '9+' : unreadNotificationCount
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) {
+      const mobileView = window.innerWidth < 768
+      setIsMobileView(mobileView)
+
+      if (!mobileView) {
         setIsMenuOpen(false)
       }
 
-      if (window.innerWidth < 768) {
+      if (mobileView) {
         setIsProfileMenuOpen(false)
       }
+
+      setIsNotificationMenuOpen(false)
     }
 
     window.addEventListener('resize', handleResize)
@@ -60,9 +85,60 @@ export default function Header() {
   }, [])
 
   useEffect(() => {
+    if (!authSession?.token) {
+      setNotifications([])
+      setIsNotificationsLoading(false)
+      setNotificationsError('')
+      setIsNotificationMenuOpen(false)
+      return
+    }
+
+    let isCurrent = true
+
+    const loadNotifications = async () => {
+      setIsNotificationsLoading(true)
+      setNotificationsError('')
+
+      try {
+        const response = await getMyNotifications()
+        if (!isCurrent) {
+          return
+        }
+
+        setNotifications(Array.isArray(response) ? response : [])
+      } catch (error) {
+        if (!isCurrent) {
+          return
+        }
+
+        setNotifications([])
+        setNotificationsError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load notifications right now.',
+        )
+      } finally {
+        if (isCurrent) {
+          setIsNotificationsLoading(false)
+        }
+      }
+    }
+
+    loadNotifications()
+
+    return () => {
+      isCurrent = false
+    }
+  }, [authSession?.token, authSession?.passwordSetupRequired])
+
+  useEffect(() => {
     const handleOutsideClick = (event) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false)
+      }
+
+      if (notificationMenuRef.current && !notificationMenuRef.current.contains(event.target)) {
+        setIsNotificationMenuOpen(false)
       }
     }
 
@@ -74,14 +150,78 @@ export default function Header() {
 
   const closeMobileMenu = () => {
     setIsMenuOpen(false)
+    setIsNotificationMenuOpen(false)
   }
 
   const handleLogout = () => {
     clearAuthSession()
     setIsProfileMenuOpen(false)
+    setIsNotificationMenuOpen(false)
     setIsMenuOpen(false)
     navigateTo('/')
   }
+
+  const toggleProfileMenu = () => {
+    setIsNotificationMenuOpen(false)
+    setIsProfileMenuOpen((prev) => !prev)
+  }
+
+  const toggleNotificationMenu = () => {
+    setIsProfileMenuOpen(false)
+    setIsNotificationMenuOpen((prev) => !prev)
+  }
+
+  const handleNotificationNavigate = async (notification) => {
+    const destination = resolveNotificationDestination(notification)
+
+    if (notification?.id) {
+      try {
+        await markNotificationAsRead(notification.id)
+        setNotifications((currentNotifications) => (
+          currentNotifications.filter((item) => item.id !== notification.id)
+        ))
+        setNotificationsError('')
+      } catch (error) {
+        setNotificationsError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to update notification status right now.',
+        )
+      }
+    }
+
+    setIsNotificationMenuOpen(false)
+    setIsMenuOpen(false)
+    navigateTo(destination)
+  }
+
+  const notificationBell = isAuthenticated && (
+    <div className="relative" ref={notificationMenuRef}>
+      <button
+        type="button"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
+        aria-expanded={isNotificationMenuOpen}
+        aria-label="Open notifications"
+        onClick={toggleNotificationMenu}
+      >
+        <HiOutlineBell className="h-5 w-5" />
+        {hasNotifications && (
+          <span className="absolute -right-1 -top-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+            {unreadBadgeLabel}
+          </span>
+        )}
+      </button>
+
+      <NotificationFloatingModal
+        isOpen={isNotificationMenuOpen}
+        notifications={notifications}
+        isLoading={isNotificationsLoading}
+        errorMessage={notificationsError}
+        unreadBadgeLabel={unreadBadgeLabel}
+        onNavigate={handleNotificationNavigate}
+      />
+    </div>
+  )
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-300/70 bg-[#f9fcfd]/90 backdrop-blur-md supports-[backdrop-filter]:bg-[#f9fcfd]/80">
@@ -105,38 +245,42 @@ export default function Header() {
             </nav>
 
             {isAuthenticated ? (
-              <div className="relative" ref={profileMenuRef}>
-                <button
-                  type="button"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
-                  aria-expanded={isProfileMenuOpen}
-                  aria-label="Open profile menu"
-                  onClick={() => setIsProfileMenuOpen((prev) => !prev)}
-                >
-                  <HiOutlineUserCircle className="h-6 w-6" />
-                </button>
+              <div className="flex items-center gap-2">
+                {!isMobileView && notificationBell}
 
-                {isProfileMenuOpen && (
-                  <div className="absolute right-0 top-12 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl shadow-slate-900/10">
-                    <div className="rounded-xl bg-slate-50 p-3">
-                      <a
-                        href="/dashboard"
-                        className="truncate text-sm font-semibold text-slate-900 hover:underline"
+                <div className="relative" ref={profileMenuRef}>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
+                    aria-expanded={isProfileMenuOpen}
+                    aria-label="Open profile menu"
+                    onClick={toggleProfileMenu}
+                  >
+                    <HiOutlineUserCircle className="h-6 w-6" />
+                  </button>
+
+                  {isProfileMenuOpen && (
+                    <div className="absolute right-0 top-12 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl shadow-slate-900/10">
+                      <div className="rounded-xl bg-slate-50 p-3">
+                        <a
+                          href="/dashboard"
+                          className="truncate text-sm font-semibold text-slate-900 hover:underline"
+                        >
+                          {profileName}
+                        </a>
+                        <p className="truncate text-xs text-slate-500">{profileEmail}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
+                        onClick={handleLogout}
                       >
-                        {profileName}
-                      </a>
-                      <p className="truncate text-xs text-slate-500">{profileEmail}</p>
+                        Log out
+                      </button>
                     </div>
-
-                    <button
-                      type="button"
-                      className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
-                      onClick={handleLogout}
-                    >
-                      Log out
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -156,33 +300,37 @@ export default function Header() {
             )}
           </div>
 
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:border-slate-500 hover:text-slate-900 md:hidden"
-            aria-expanded={isMenuOpen}
-            aria-controls="mobile-menu"
-            aria-label="Toggle navigation menu"
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-          >
-            <span className="sr-only">Toggle navigation menu</span>
-            <span className="relative h-4 w-5">
-              <span
-                className={`absolute left-0 top-0 h-0.5 w-5 rounded bg-current transition-transform duration-300 ${
-                  isMenuOpen ? 'translate-y-[7px] rotate-45' : ''
-                }`}
-              />
-              <span
-                className={`absolute left-0 top-[7px] h-0.5 w-5 rounded bg-current transition-opacity duration-300 ${
-                  isMenuOpen ? 'opacity-0' : 'opacity-100'
-                }`}
-              />
-              <span
-                className={`absolute left-0 top-[14px] h-0.5 w-5 rounded bg-current transition-transform duration-300 ${
-                  isMenuOpen ? '-translate-y-[7px] -rotate-45' : ''
-                }`}
-              />
-            </span>
-          </button>
+          <div className="ml-auto flex items-center gap-2 md:hidden">
+            {isMobileView && notificationBell}
+
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:border-slate-500 hover:text-slate-900"
+              aria-expanded={isMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label="Toggle navigation menu"
+              onClick={() => setIsMenuOpen((prev) => !prev)}
+            >
+              <span className="sr-only">Toggle navigation menu</span>
+              <span className="relative h-4 w-5">
+                <span
+                  className={`absolute left-0 top-0 h-0.5 w-5 rounded bg-current transition-transform duration-300 ${
+                    isMenuOpen ? 'translate-y-[7px] rotate-45' : ''
+                  }`}
+                />
+                <span
+                  className={`absolute left-0 top-[7px] h-0.5 w-5 rounded bg-current transition-opacity duration-300 ${
+                    isMenuOpen ? 'opacity-0' : 'opacity-100'
+                  }`}
+                />
+                <span
+                  className={`absolute left-0 top-[14px] h-0.5 w-5 rounded bg-current transition-transform duration-300 ${
+                    isMenuOpen ? '-translate-y-[7px] -rotate-45' : ''
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
         </div>
 
         <div
