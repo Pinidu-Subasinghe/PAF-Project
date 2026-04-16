@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -82,7 +83,34 @@ public class AuthService {
         );
     }
 
+    @Transactional
+    public AppUser findOrCreateOAuthUser(String email, String fullName) {
+        String normalizedEmail = normalizeEmail(email);
+
+        return userRepository.findByEmail(normalizedEmail)
+                .orElseGet(() -> {
+                    AppUser user = new AppUser();
+                    user.setEmail(normalizedEmail);
+                    user.setFullName(resolveDisplayName(fullName, normalizedEmail));
+                    user.setPasswordHash(passwordEncoder.encode("oauth2:" + UUID.randomUUID()));
+                    user.setRole(Role.USER);
+                    return userRepository.save(user);
+                });
+    }
+
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String resolveDisplayName(String fullName, String normalizedEmail) {
+        if (fullName != null && !fullName.trim().isBlank()) {
+            String trimmedName = fullName.trim();
+            return trimmedName.length() > 120 ? trimmedName.substring(0, 120) : trimmedName;
+        }
+
+        String localPart = normalizedEmail.contains("@")
+                ? normalizedEmail.substring(0, normalizedEmail.indexOf('@'))
+                : normalizedEmail;
+        return localPart.length() > 120 ? localPart.substring(0, 120) : localPart;
     }
 }
