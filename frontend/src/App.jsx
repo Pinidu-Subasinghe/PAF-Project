@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
+import ScrollToTopButton from './components/ScrollToTopButton'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
@@ -44,18 +45,28 @@ function App() {
   const isDashboardPage = currentPath.startsWith('/dashboard') || currentPath.startsWith('/user')
 
   const isAuthPage = isLoginPage || isSignUpPage
+  const showChrome = !isAuthPage
+  const showScrollToTop = !isAuthPage && !isDashboardPage
+  const showFooter = showChrome && !isDashboardPage
+
+  const appShellClass = isDashboardPage
+    ? 'h-screen'
+    : 'min-h-screen'
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      {!isAuthPage && <Header />}
-      {isSignUpPage
-        ? <SignUpPage />
-        : isLoginPage
-          ? <LoginPage />
-          : isDashboardPage
-            ? <UserDashboard />
-            : <HomePage />}
-      {!isAuthPage && <Footer />}
+    <div className={`${appShellClass} bg-slate-50 text-slate-900 flex flex-col`}>
+      {showChrome && <Header />}
+      <div className="flex-1 min-h-0">
+        {isSignUpPage
+          ? <SignUpPage />
+          : isLoginPage
+            ? <LoginPage />
+            : isDashboardPage
+              ? <UserDashboard />
+              : <HomePage />}
+      </div>
+      {showScrollToTop && <ScrollToTopButton />}
+      {showFooter && <Footer />}
     </div>
   )
 }
