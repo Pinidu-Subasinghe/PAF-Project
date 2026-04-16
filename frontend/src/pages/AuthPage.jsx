@@ -3,7 +3,7 @@ import LoginForm from '../components/LoginForm'
 
 export default function AuthPage() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-amber-100 via-amber-50 to-blue-100 px-4 py-10 sm:px-6">
+    <main className="relative flex items-center justify-center overflow-hidden bg-gradient-to-b from-amber-100 via-amber-50 to-blue-100 px-4 py-10 sm:px-6">
       <div
         aria-hidden
         className="pointer-events-none absolute -left-28 -top-24 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_30%_30%,#f9f2d7_0%,#f0c172_58%,transparent_75%)]"
@@ -21,7 +21,7 @@ export default function AuthPage() {
         </p>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          <article className="rounded-2xl border border-amber-700/15 bg-amber-50/35 p-5">
+          <article id="register" className="rounded-2xl border border-amber-700/15 bg-amber-50/35 p-5">
             <h2 className="font-serif text-2xl text-stone-900">Register</h2>
             <p className="mt-1 text-sm text-stone-600">Create a user account with full name, email, and password.</p>
             <div className="mt-4">
@@ -29,7 +29,7 @@ export default function AuthPage() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-sky-700/15 bg-sky-50/35 p-5">
+          <article id="login" className="rounded-2xl border border-sky-700/15 bg-sky-50/35 p-5">
             <h2 className="font-serif text-2xl text-stone-900">Login</h2>
             <p className="mt-1 text-sm text-stone-600">Sign in to request a token for protected API access.</p>
             <div className="mt-4">
