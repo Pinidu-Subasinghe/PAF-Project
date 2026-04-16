@@ -21,15 +21,18 @@ public class UserProfileService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final NotificationService notificationService;
 
     public UserProfileService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService
+            JwtService jwtService,
+            NotificationService notificationService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -48,10 +51,12 @@ public class UserProfileService {
         String newPassword = request.getNewPassword();
         boolean hasNewPassword = newPassword != null && !newPassword.isBlank();
         boolean passwordSetupRequired = isPasswordSetupRequired(user);
+        boolean completedInitialPasswordSetup = false;
 
         if (hasNewPassword) {
             if (passwordSetupRequired) {
                 // First password setup for OAuth-created accounts does not need a previous password.
+                completedInitialPasswordSetup = true;
             } else {
                 String currentPassword = request.getCurrentPassword();
                 if (currentPassword == null || currentPassword.isBlank()) {
@@ -65,10 +70,13 @@ public class UserProfileService {
 
             user.setPasswordHash(passwordEncoder.encode(newPassword));
         } else if (passwordSetupRequired) {
-            throw new InvalidCredentialsException("Google account users must create a password in profile.");
+            throw new InvalidCredentialsException("Google account users must create a password in Change Password before updating profile.");
         }
 
         AppUser savedUser = userRepository.save(user);
+        if (completedInitialPasswordSetup) {
+            notificationService.markPasswordSetupRequiredNotificationsAsRead(savedUser.getId());
+        }
         JwtToken token = jwtService.generateToken(savedUser);
 
         return new LoginResponse(
@@ -85,6 +93,7 @@ public class UserProfileService {
     @Transactional
     public void deleteProfile(String email) {
         AppUser user = findByEmail(email);
+        notificationService.deleteAllByUserId(user.getId());
         userRepository.delete(user);
     }
 

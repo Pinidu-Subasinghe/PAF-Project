@@ -4,6 +4,7 @@ import com.example.backend.entity.AppUser;
 import com.example.backend.security.jwt.JwtService;
 import com.example.backend.security.jwt.JwtToken;
 import com.example.backend.service.AuthService;
+import com.example.backend.service.NotificationService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,15 +24,18 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private final AuthService authService;
     private final JwtService jwtService;
+    private final NotificationService notificationService;
     private final String frontendOAuthSuccessUrl;
 
     public OAuth2AuthenticationSuccessHandler(
             AuthService authService,
             JwtService jwtService,
+            NotificationService notificationService,
             @Value("${app.frontend.oauth-success-url:http://localhost:5173/}") String frontendOAuthSuccessUrl
     ) {
         this.authService = authService;
         this.jwtService = jwtService;
+        this.notificationService = notificationService;
         this.frontendOAuthSuccessUrl = frontendOAuthSuccessUrl;
     }
 
@@ -55,6 +59,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String fullName = readAttribute(oauth2User, "name");
 
         AppUser appUser = authService.findOrCreateOAuthUser(email, fullName);
+        if (isPasswordSetupRequired(appUser)) {
+            notificationService.ensurePasswordSetupRequiredNotification(appUser);
+        }
         JwtToken jwtToken = jwtService.generateToken(appUser);
 
         String fragment = "token=" + encode(jwtToken.token())

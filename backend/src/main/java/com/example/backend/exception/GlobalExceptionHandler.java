@@ -61,6 +61,14 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, "Request conflicts with existing data", request);
     }
 
+        @ExceptionHandler(NotificationNotFoundException.class)
+        public ResponseEntity<ApiError> handleNotificationNotFound(
+                        NotificationNotFoundException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        }
+
         @ExceptionHandler(UserNotFoundException.class)
         public ResponseEntity<ApiError> handleUserNotFound(
                         UserNotFoundException ex,

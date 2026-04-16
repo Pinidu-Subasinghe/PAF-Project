@@ -69,3 +69,16 @@ export async function deleteProfile() {
     headers: getAuthHeader(),
   })
 }
+
+export async function getMyNotifications() {
+  return request('/api/v1/notifications/me', {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function markNotificationAsRead(notificationId) {
+  return request(`/api/v1/notifications/${notificationId}/read`, {
+    method: 'PATCH',
+    headers: getAuthHeader(),
+  })
+}
