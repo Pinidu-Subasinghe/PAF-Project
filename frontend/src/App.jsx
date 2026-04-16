@@ -25,11 +25,13 @@ function App() {
   const isLoginPage = currentPath.startsWith('/login') || currentPath.startsWith('/auth')
   const isSignUpPage = currentPath.startsWith('/signup') || currentPath.startsWith('/register')
 
+  const isAuthPage = isLoginPage || isSignUpPage
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <Header />
+      {!isAuthPage && <Header />}
       {isSignUpPage ? <SignUpPage /> : isLoginPage ? <LoginPage /> : <HomePage />}
-      <Footer />
+      {!isAuthPage && <Footer />}
     </div>
   )
 }

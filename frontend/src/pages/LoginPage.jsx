@@ -130,150 +130,89 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative overflow-hidden bg-[linear-gradient(165deg,#f9fbff_0%,#e9f7f5_45%,#fff4dd_100%)] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-16 top-14 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_35%_35%,rgba(20,184,166,0.22)_0%,transparent_70%)]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-20 right-0 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_45%_45%,rgba(245,158,11,0.2)_0%,transparent_70%)]"
-      />
-
-      <section className="relative z-10 mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <article className="fade-up rounded-3xl border border-slate-300/40 bg-slate-900 p-6 text-slate-100 shadow-[0_24px_55px_rgba(15,23,42,0.26)] sm:p-8 lg:p-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Secure Access</p>
-          <h1 className="mt-4 font-serif text-3xl leading-tight text-white sm:text-4xl">Welcome back to UniPilot</h1>
-          <p className="mt-4 text-sm leading-7 text-slate-300 sm:text-base">
-            Login to continue with Smart Campus Operations Hub and manage facilities, bookings, and maintenance
-            workflows from one portal.
+    <main className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-0">
+      <div className="w-full max-w-md space-y-4">
+        <div className="text-center">
+          <h1 className="text-3xl font-semibold text-slate-900">UniPilot</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Sign in to continue
           </p>
+        </div>
 
-          <ul className="mt-8 space-y-4 text-sm sm:text-base">
-            <li className="flex items-start gap-3">
-              <span className="mt-2 h-2 w-2 rounded-full bg-amber-300" />
-              <span>Role-based access for USER and ADMIN workflows.</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="mt-2 h-2 w-2 rounded-full bg-amber-300" />
-              <span>Real-time booking, ticket, and notification visibility.</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="mt-2 h-2 w-2 rounded-full bg-amber-300" />
-              <span>Consistent audit-ready operations across the platform.</span>
-            </li>
-          </ul>
-
-          <a
-            href="/#modules"
-            className="mt-8 inline-flex rounded-full border border-white/30 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-white/60"
-          >
-            Explore Platform Modules
-          </a>
-        </article>
-
-        <article className="fade-up fade-up-delay-1 rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-[0_20px_50px_rgba(15,23,42,0.12)] sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">Portal Login</p>
-          <h2 className="mt-2 font-serif text-3xl text-slate-900 sm:text-4xl">Sign in to your account</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">
-            Enter your credentials to access your dashboard and continue your campus operations.
-          </p>
-
-          <form className="mt-6 grid gap-3" onSubmit={handleSubmit} noValidate>
-            <label className="text-sm font-semibold text-slate-800" htmlFor="loginEmail">
-              Email
-            </label>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
             <input
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-300/40"
-              id="loginEmail"
               name="email"
               type="email"
-              autoComplete="email"
+              placeholder="Email address"
               value={formValues.email}
               onChange={handleChange}
-              placeholder="jane@example.com"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-900"
               required
             />
 
-            <label className="mt-1 text-sm font-semibold text-slate-800" htmlFor="loginPassword">
-              Password
-            </label>
             <input
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-300/40"
-              id="loginPassword"
               name="password"
               type="password"
-              autoComplete="current-password"
+              placeholder="Password"
               value={formValues.password}
               onChange={handleChange}
-              placeholder="Enter your password"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-900"
               required
             />
 
             <button
-              className="mt-4 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-teal-700 to-cyan-600 px-5 py-3 font-semibold text-teal-50 transition hover:-translate-y-px hover:shadow-lg hover:shadow-teal-900/20 disabled:cursor-not-allowed disabled:opacity-70"
               type="submit"
               disabled={isSubmitting}
+              className="w-full rounded-lg bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
             >
               {isSubmitting ? 'Signing in...' : 'Sign in'}
             </button>
 
-            <div className="mt-2 flex items-center gap-3">
-              <span className="h-px flex-1 bg-slate-200" />
-              <span className="text-xs uppercase tracking-[0.14em] text-slate-500">or</span>
-              <span className="h-px flex-1 bg-slate-200" />
+            <div className="flex items-center gap-3 py-2">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs text-slate-400">OR</span>
+              <div className="h-px flex-1 bg-slate-200" />
             </div>
 
             <button
               type="button"
-              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
               onClick={startGoogleOAuth}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-slate-300 py-2.5 text-sm font-medium hover:bg-slate-50"
             >
+              <svg className="h-5 w-5" viewBox="0 0 48 48">
+                <path fill="#FFC107" d="M43.6 20.5H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+              </svg>
               Continue with Google
             </button>
           </form>
 
           {errorMessage && (
-            <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-              {errorMessage}
-            </p>
+            <p className="mt-4 text-sm text-red-600">{errorMessage}</p>
           )}
 
           {successMessage && (
-            <p
-              className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
-              role="status"
-            >
-              {successMessage}
-            </p>
+            <p className="mt-4 text-sm text-green-600">{successMessage}</p>
           )}
 
           {loginSession && (
-            <dl className="mt-4 grid gap-2 border-t border-dashed border-teal-900/20 pt-4 text-sm sm:text-base">
-              <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
-                <dt className="font-semibold text-slate-800">Email</dt>
-                <dd className="text-slate-600">{loginSession.email}</dd>
-              </div>
-              <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
-                <dt className="font-semibold text-slate-800">Role</dt>
-                <dd className="text-slate-600">{loginSession.role}</dd>
-              </div>
-              <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
-                <dt className="font-semibold text-slate-800">Token type</dt>
-                <dd className="text-slate-600">{loginSession.tokenType}</dd>
-              </div>
-              <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
-                <dt className="font-semibold text-slate-800">Expires at</dt>
-                <dd className="text-slate-600">{formatExpiryDate(loginSession.expiresAt)}</dd>
-              </div>
-              <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
-                <dt className="font-semibold text-slate-800">Session token</dt>
-                <dd className="text-slate-600">{loginSession.hasToken ? 'Received' : 'Unavailable'}</dd>
-              </div>
-            </dl>
+            <div className="mt-4 text-sm text-slate-600">
+              <p><strong>Email:</strong> {loginSession.email}</p>
+              <p><strong>Role:</strong> {loginSession.role}</p>
+              <p><strong>Token type:</strong> {loginSession.tokenType}</p>
+              <p><strong>Expires at:</strong> {formatExpiryDate(loginSession.expiresAt)}</p>
+              <p><strong>Session token:</strong> {loginSession.hasToken ? 'Received' : 'Unavailable'}</p>
+            </div>
           )}
-        </article>
-      </section>
+        </div>
+
+        <p className="text-center text-sm text-slate-500">
+          Don&apos;t have an account?{' '}
+          <a href="/signup" className="font-medium text-slate-900 hover:underline">
+            Sign up
+          </a>
+        </p>
+      </div>
     </main>
   )
 }
