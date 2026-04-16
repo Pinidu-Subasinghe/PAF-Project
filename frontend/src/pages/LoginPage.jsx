@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { loginUser } from '../api/api'
 import { writeAuthSession } from '../utils/authSession'
+import { consumeGoogleOAuthRedirect, startGoogleOAuth } from '../utils/googleOAuth'
 
 const initialFormState = {
   email: '',
@@ -45,6 +46,19 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [loginSession, setLoginSession] = useState(null)
+
+  useEffect(() => {
+    const oauthResult = consumeGoogleOAuthRedirect()
+
+    if (oauthResult.status === 'success') {
+      navigateTo('/')
+      return
+    }
+
+    if (oauthResult.status === 'error') {
+      setErrorMessage('Google sign-in failed. Please try again.')
+    }
+  }, [])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -202,6 +216,20 @@ export default function LoginPage() {
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Signing in...' : 'Sign in'}
+            </button>
+
+            <div className="mt-2 flex items-center gap-3">
+              <span className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs uppercase tracking-[0.14em] text-slate-500">or</span>
+              <span className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
+              onClick={startGoogleOAuth}
+            >
+              Continue with Google
             </button>
           </form>
 
