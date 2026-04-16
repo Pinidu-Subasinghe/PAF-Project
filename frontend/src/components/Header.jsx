@@ -48,12 +48,20 @@ export default function Header() {
               ))}
             </nav>
 
-            <a
-              className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
-              href="/login"
-            >
-              Login
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                className="rounded-full border border-slate-400 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-600 hover:text-slate-900"
+                href="/signup"
+              >
+                Sign up
+              </a>
+              <a
+                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+                href="/login"
+              >
+                Login
+              </a>
+            </div>
           </div>
 
           <button
@@ -105,7 +113,14 @@ export default function Header() {
               ))}
             </nav>
 
-            <div className="mt-3 border-t border-slate-200 pt-3">
+            <div className="mt-3 grid gap-2 border-t border-slate-200 pt-3">
+              <a
+                className="block rounded-xl border border-slate-400 px-4 py-2 text-center text-sm font-semibold text-slate-700 transition hover:border-slate-600 hover:text-slate-900"
+                href="/signup"
+                onClick={closeMobileMenu}
+              >
+                Sign up
+              </a>
               <a
                 className="block rounded-xl bg-slate-900 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-slate-700"
                 href="/login"
