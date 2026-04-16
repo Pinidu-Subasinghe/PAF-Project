@@ -21,16 +21,16 @@ export default function CtaSection() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <a
-              href="/auth#register"
+              href="/login"
               className="rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-slate-700"
             >
-              Create Account
+              Open Login
             </a>
             <a
-              href="/auth#login"
+              href="/#modules"
               className="rounded-full border border-slate-400 px-6 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-700 transition hover:border-slate-700 hover:text-slate-900"
             >
-              Login
+              View Modules
             </a>
           </div>
         </div>

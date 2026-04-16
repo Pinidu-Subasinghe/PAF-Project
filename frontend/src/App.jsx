@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
-import AuthPage from './pages/AuthPage'
+import LoginPage from './pages/LoginPage'
 
 function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
@@ -21,12 +21,12 @@ function App() {
     }
   }, [])
 
-  const isAuthPage = currentPath.startsWith('/auth')
+  const isLoginPage = currentPath.startsWith('/login') || currentPath.startsWith('/auth')
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <Header />
-      {isAuthPage ? <AuthPage /> : <HomePage />}
+      {isLoginPage ? <LoginPage /> : <HomePage />}
       <Footer />
     </div>
   )

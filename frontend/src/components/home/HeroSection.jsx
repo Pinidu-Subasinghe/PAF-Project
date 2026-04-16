@@ -22,10 +22,10 @@ export default function HeroSection() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <a
-              href="/auth#register"
+              href="/login"
               className="rounded-full bg-teal-700 px-7 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-teal-600"
             >
-              Start with Sign up
+              Start with Login
             </a>
             <a
               href="#modules"
