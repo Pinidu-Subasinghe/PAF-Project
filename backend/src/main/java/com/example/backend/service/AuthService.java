@@ -66,6 +66,10 @@ public class AuthService {
         AppUser user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
+        if (isPasswordSetupRequired(user)) {
+            throw new InvalidCredentialsException("Password is not set. Sign in with Google and create a password in profile.");
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new InvalidCredentialsException("Invalid email or password");
         }
@@ -78,11 +82,43 @@ public class AuthService {
                 token.expiresAt(),
                 user.getEmail(),
                 user.getFullName(),
-                user.getRole().name()
+            user.getRole().name(),
+            isPasswordSetupRequired(user)
         );
+    }
+
+    @Transactional
+    public AppUser findOrCreateOAuthUser(String email, String fullName) {
+        String normalizedEmail = normalizeEmail(email);
+
+        return userRepository.findByEmail(normalizedEmail)
+                .orElseGet(() -> {
+                    AppUser user = new AppUser();
+                    user.setEmail(normalizedEmail);
+                    user.setFullName(resolveDisplayName(fullName, normalizedEmail));
+                    user.setPasswordHash("");
+                    user.setRole(Role.USER);
+                    return userRepository.save(user);
+                });
+    }
+
+    private boolean isPasswordSetupRequired(AppUser user) {
+        return user.getPasswordHash() == null || user.getPasswordHash().isBlank();
     }
 
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String resolveDisplayName(String fullName, String normalizedEmail) {
+        if (fullName != null && !fullName.trim().isBlank()) {
+            String trimmedName = fullName.trim();
+            return trimmedName.length() > 120 ? trimmedName.substring(0, 120) : trimmedName;
+        }
+
+        String localPart = normalizedEmail.contains("@")
+                ? normalizedEmail.substring(0, normalizedEmail.indexOf('@'))
+                : normalizedEmail;
+        return localPart.length() > 120 ? localPart.substring(0, 120) : localPart;
     }
 }

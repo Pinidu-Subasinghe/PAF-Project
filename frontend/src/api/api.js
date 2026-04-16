@@ -1,3 +1,5 @@
+import { readAuthSession } from '../utils/authSession'
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080').replace(/\/$/, '')
 
 function readErrorMessage(payload, fallbackMessage) {
@@ -29,6 +31,16 @@ async function request(path, options = {}) {
   return payload
 }
 
+function getAuthHeader() {
+  const session = readAuthSession()
+  if (!session?.token) {
+    throw new Error('You must be signed in to perform this action.')
+  }
+
+  const tokenType = session.tokenType ?? 'Bearer'
+  return { Authorization: `${tokenType} ${session.token}` }
+}
+
 export async function registerUser(registerPayload) {
   return request('/api/v1/auth/register', {
     method: 'POST',
@@ -40,5 +52,20 @@ export async function loginUser(loginPayload) {
   return request('/api/v1/auth/login', {
     method: 'POST',
     body: loginPayload,
+  })
+}
+
+export async function updateProfile(updatePayload) {
+  return request('/api/v1/users/me', {
+    method: 'PUT',
+    body: updatePayload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function deleteProfile() {
+  return request('/api/v1/users/me', {
+    method: 'DELETE',
+    headers: getAuthHeader(),
   })
 }
