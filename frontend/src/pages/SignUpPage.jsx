@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { registerUser } from '../api/api'
 import { writeAuthSession } from '../utils/authSession'
-import { consumeGoogleOAuthRedirect, startGoogleOAuth } from '../utils/googleOAuth'
+import { startGoogleOAuth } from '../utils/googleOAuth'
 
 const initialFormState = {
   fullName: '',
@@ -44,15 +44,12 @@ export default function SignUpPage() {
   const [registeredUser, setRegisteredUser] = useState(null)
 
   useEffect(() => {
-    const oauthResult = consumeGoogleOAuthRedirect()
+    const queryParams = new URLSearchParams(window.location.search)
+    const oauthError = queryParams.get('error')
 
-    if (oauthResult.status === 'success') {
-      navigateTo('/')
-      return
-    }
-
-    if (oauthResult.status === 'error') {
+    if (oauthError) {
       setErrorMessage('Google sign-up failed. Please try again.')
+      window.history.replaceState(null, '', window.location.pathname)
     }
   }, [])
 

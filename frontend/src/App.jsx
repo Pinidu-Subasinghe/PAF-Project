@@ -4,6 +4,7 @@ import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
+import { consumeGoogleOAuthRedirect } from './utils/googleOAuth'
 
 function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
@@ -19,6 +20,21 @@ function App() {
     return () => {
       window.removeEventListener('popstate', handleLocationChange)
       window.removeEventListener('hashchange', handleLocationChange)
+    }
+  }, [])
+
+  useEffect(() => {
+    const oauthResult = consumeGoogleOAuthRedirect()
+
+    if (oauthResult.status === 'success') {
+      window.history.replaceState(null, '', '/')
+      setCurrentPath('/')
+      return
+    }
+
+    if (oauthResult.status === 'error') {
+      window.history.replaceState(null, '', '/login')
+      setCurrentPath('/login')
     }
   }, [])
 
