@@ -92,6 +92,7 @@ export default function SignUpPage() {
         tokenType: null,
         expiresAt: null,
         token: null,
+        passwordSetupRequired: false,
       }
 
       writeAuthSession(nextSession)

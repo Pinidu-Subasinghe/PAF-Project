@@ -11,6 +11,8 @@ import {
 const initialFormState = {
   fullName: '',
   email: '',
+  newPassword: '',
+  confirmPassword: '',
 }
 
 const initialEditableState = {
@@ -74,6 +76,8 @@ export default function Profile({ session }) {
     setFormValues({
       fullName: activeSession.fullName ?? '',
       email: activeSession.email ?? '',
+      newPassword: '',
+      confirmPassword: '',
     })
     setEditableFields(initialEditableState)
   }, [activeSession?.fullName, activeSession?.email])
@@ -95,10 +99,10 @@ export default function Profile({ session }) {
     )
   }
 
-  const displayName = activeSession.fullName?.trim() || activeSession.email || 'Campus User'
   const role = activeSession.role ?? 'USER'
-  const tokenType = activeSession.tokenType ?? 'Not provided'
   const expiresAt = formatExpiryDate(activeSession.expiresAt)
+  const requiresPasswordSetup = Boolean(activeSession.passwordSetupRequired)
+  const hasPasswordInput = Boolean(formValues.newPassword.trim() || formValues.confirmPassword.trim())
 
   const hasProfileChanges = useMemo(() => {
     const currentName = (activeSession.fullName ?? '').trim()
@@ -143,7 +147,33 @@ export default function Profile({ session }) {
       return
     }
 
-    if (!hasProfileChanges) {
+    if (requiresPasswordSetup) {
+      if (!formValues.newPassword.trim() || !formValues.confirmPassword.trim()) {
+        setStatusType('error')
+        setStatusMessage('Google users must create a password before continuing.')
+        return
+      }
+
+      if (formValues.newPassword.length < 8) {
+        setStatusType('error')
+        setStatusMessage('New password must be at least 8 characters.')
+        return
+      }
+
+      if (!/[A-Za-z]/.test(formValues.newPassword) || !/\d/.test(formValues.newPassword)) {
+        setStatusType('error')
+        setStatusMessage('New password must include at least one letter and one number.')
+        return
+      }
+
+      if (formValues.newPassword !== formValues.confirmPassword) {
+        setStatusType('error')
+        setStatusMessage('Password and confirm password do not match.')
+        return
+      }
+    }
+
+    if (!hasProfileChanges && !(requiresPasswordSetup && hasPasswordInput)) {
       setStatusType('error')
       setStatusMessage('No changes to update.')
       return
@@ -155,6 +185,7 @@ export default function Profile({ session }) {
       const response = await updateProfile({
         fullName: trimmedName,
         email: trimmedEmail,
+        ...(requiresPasswordSetup ? { newPassword: formValues.newPassword } : {}),
       })
 
       const nextSession = {
@@ -164,10 +195,16 @@ export default function Profile({ session }) {
         email: response?.email ?? trimmedEmail,
         fullName: response?.fullName ?? trimmedName,
         role: response?.role ?? activeSession.role ?? 'USER',
+        passwordSetupRequired: response?.passwordSetupRequired ?? false,
       }
 
       writeAuthSession(nextSession)
       setLocalSession(nextSession)
+      setFormValues((prev) => ({
+        ...prev,
+        newPassword: '',
+        confirmPassword: '',
+      }))
       setEditableFields(initialEditableState)
       setStatusType('success')
       setStatusMessage('Profile updated successfully.')
@@ -279,9 +316,44 @@ export default function Profile({ session }) {
           </label>
         </div>
 
+        {requiresPasswordSetup && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+            <p className="text-sm font-semibold text-red-700">Password setup required</p>
+            <p className="mt-1 text-sm text-red-600">
+              Your account was created with Google. Create a password to complete your profile.
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="text-sm font-semibold text-red-700" htmlFor="profileNewPassword">
+                New password
+                <input
+                  id="profileNewPassword"
+                  name="newPassword"
+                  type="password"
+                  value={formValues.newPassword}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-red-500"
+                  placeholder="At least 8 characters"
+                />
+              </label>
+              <label className="text-sm font-semibold text-red-700" htmlFor="profileConfirmPassword">
+                Confirm password
+                <input
+                  id="profileConfirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={formValues.confirmPassword}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-red-500"
+                  placeholder="Re-enter password"
+                />
+              </label>
+            </div>
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={isSubmitting || !hasProfileChanges}
+          disabled={isSubmitting || (!hasProfileChanges && !requiresPasswordSetup)}
           className="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? 'Updating...' : 'Update profile'}

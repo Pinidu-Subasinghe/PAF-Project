@@ -62,7 +62,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 + "&expiresAt=" + encode(jwtToken.expiresAt().toString())
                 + "&email=" + encode(appUser.getEmail())
                 + "&fullName=" + encode(appUser.getFullName())
-                + "&role=" + encode(appUser.getRole().name());
+            + "&role=" + encode(appUser.getRole().name())
+            + "&passwordSetupRequired=" + encode(Boolean.toString(isPasswordSetupRequired(appUser)));
 
         String redirectUrl = UriComponentsBuilder
                 .fromUriString(frontendOAuthSuccessUrl)
@@ -81,5 +82,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private boolean isPasswordSetupRequired(AppUser user) {
+        return user.getPasswordHash() == null || user.getPasswordHash().isBlank();
     }
 }

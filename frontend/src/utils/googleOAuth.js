@@ -20,6 +20,7 @@ export function consumeGoogleOAuthRedirect() {
       email: hashParams.get('email'),
       fullName: hashParams.get('fullName'),
       role: hashParams.get('role') ?? 'USER',
+      passwordSetupRequired: hashParams.get('passwordSetupRequired') === 'true',
     }
 
     writeAuthSession(nextSession)

@@ -4,10 +4,12 @@ import com.example.backend.dto.request.UpdateProfileRequest;
 import com.example.backend.dto.response.LoginResponse;
 import com.example.backend.entity.AppUser;
 import com.example.backend.exception.EmailAlreadyExistsException;
+import com.example.backend.exception.InvalidCredentialsException;
 import com.example.backend.exception.UserNotFoundException;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.security.jwt.JwtService;
 import com.example.backend.security.jwt.JwtToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +19,16 @@ import java.util.Locale;
 public class UserProfileService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public UserProfileService(UserRepository userRepository, JwtService jwtService) {
+    public UserProfileService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService
+    ) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
 
@@ -37,6 +45,17 @@ public class UserProfileService {
         user.setFullName(request.getFullName().trim());
         user.setEmail(normalizedEmail);
 
+        String newPassword = request.getNewPassword();
+        boolean passwordSetupRequired = isPasswordSetupRequired(user);
+
+        if (passwordSetupRequired) {
+            if (newPassword == null || newPassword.isBlank()) {
+                throw new InvalidCredentialsException("Google account users must create a password in profile.");
+            }
+
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
+        }
+
         AppUser savedUser = userRepository.save(user);
         JwtToken token = jwtService.generateToken(savedUser);
 
@@ -46,7 +65,8 @@ public class UserProfileService {
                 token.expiresAt(),
                 savedUser.getEmail(),
                 savedUser.getFullName(),
-                savedUser.getRole().name()
+                savedUser.getRole().name(),
+                isPasswordSetupRequired(savedUser)
         );
     }
 
@@ -64,5 +84,9 @@ public class UserProfileService {
 
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isPasswordSetupRequired(AppUser user) {
+        return user.getPasswordHash() == null || user.getPasswordHash().isBlank();
     }
 }

@@ -94,6 +94,7 @@ export default function LoginPage() {
         tokenType: responseBody?.tokenType ?? 'Bearer',
         expiresAt: responseBody?.expiresAt ?? null,
         token: responseBody?.token ?? null,
+        passwordSetupRequired: responseBody?.passwordSetupRequired ?? false,
       }
 
       writeAuthSession(nextSession)

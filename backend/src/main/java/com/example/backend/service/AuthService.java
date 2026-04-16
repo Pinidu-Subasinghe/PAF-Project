@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
-import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -67,6 +66,10 @@ public class AuthService {
         AppUser user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
+        if (isPasswordSetupRequired(user)) {
+            throw new InvalidCredentialsException("Password is not set. Sign in with Google and create a password in profile.");
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new InvalidCredentialsException("Invalid email or password");
         }
@@ -79,7 +82,8 @@ public class AuthService {
                 token.expiresAt(),
                 user.getEmail(),
                 user.getFullName(),
-                user.getRole().name()
+            user.getRole().name(),
+            isPasswordSetupRequired(user)
         );
     }
 
@@ -92,10 +96,14 @@ public class AuthService {
                     AppUser user = new AppUser();
                     user.setEmail(normalizedEmail);
                     user.setFullName(resolveDisplayName(fullName, normalizedEmail));
-                    user.setPasswordHash(passwordEncoder.encode("oauth2:" + UUID.randomUUID()));
+                    user.setPasswordHash("");
                     user.setRole(Role.USER);
                     return userRepository.save(user);
                 });
+    }
+
+    private boolean isPasswordSetupRequired(AppUser user) {
+        return user.getPasswordHash() == null || user.getPasswordHash().isBlank();
     }
 
     private String normalizeEmail(String email) {

@@ -8,6 +8,7 @@ public record LoginResponse(
         Instant expiresAt,
         String email,
         String fullName,
-        String role
+        String role,
+        boolean passwordSetupRequired
 ) {
 }

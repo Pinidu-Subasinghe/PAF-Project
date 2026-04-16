@@ -2,6 +2,7 @@ package com.example.backend.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class UpdateProfileRequest {
@@ -14,6 +15,13 @@ public class UpdateProfileRequest {
     @Email(message = "Email format is invalid")
     @Size(max = 150, message = "Email must not exceed 150 characters")
     private String email;
+
+        @Size(min = 8, max = 72, message = "Password must be between 8 and 72 characters")
+        @Pattern(
+            regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$",
+            message = "Password must contain at least one letter and one number"
+        )
+        private String newPassword;
 
     public String getFullName() {
         return fullName;
@@ -29,5 +37,13 @@ public class UpdateProfileRequest {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getNewPassword() {
+        return newPassword;
+    }
+
+    public void setNewPassword(String newPassword) {
+        this.newPassword = newPassword;
     }
 }
