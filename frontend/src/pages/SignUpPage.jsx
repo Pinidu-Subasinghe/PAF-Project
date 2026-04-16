@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { registerUser } from '../api/api'
+import { writeAuthSession } from '../utils/authSession'
 
 const initialFormState = {
   fullName: '',
@@ -27,6 +28,11 @@ function validateForm(formValues) {
   }
 
   return ''
+}
+
+function navigateTo(pathname) {
+  window.history.pushState(null, '', pathname)
+  window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
 export default function SignUpPage() {
@@ -67,15 +73,28 @@ export default function SignUpPage() {
     try {
       const responseBody = await registerUser(payload)
 
-      setFormValues(initialFormState)
-      setRegisteredUser({
+      const nextSession = {
         id: responseBody?.id ?? null,
         fullName: responseBody?.fullName ?? payload.fullName,
         email: responseBody?.email ?? payload.email,
         role: responseBody?.role ?? 'USER',
+        tokenType: null,
+        expiresAt: null,
+        token: null,
+      }
+
+      writeAuthSession(nextSession)
+
+      setFormValues(initialFormState)
+      setRegisteredUser({
+        id: nextSession.id,
+        fullName: nextSession.fullName,
+        email: nextSession.email,
+        role: nextSession.role,
         createdAt: responseBody?.createdAt ?? null,
       })
       setSuccessMessage(`Account created for ${responseBody?.fullName ?? payload.fullName}.`)
+      navigateTo('/')
     } catch (error) {
       setRegisteredUser(null)
       setErrorMessage(

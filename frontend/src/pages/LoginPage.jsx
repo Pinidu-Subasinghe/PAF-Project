@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { loginUser } from '../api/api'
+import { writeAuthSession } from '../utils/authSession'
 
 const initialFormState = {
   email: '',
@@ -31,6 +32,11 @@ function formatExpiryDate(expiresAt) {
   }
 
   return parsedDate.toLocaleString()
+}
+
+function navigateTo(pathname) {
+  window.history.pushState(null, '', pathname)
+  window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
 export default function LoginPage() {
@@ -70,21 +76,33 @@ export default function LoginPage() {
     try {
       const responseBody = await loginUser(payload)
 
-      setFormValues({
+      const nextSession = {
         email: responseBody?.email ?? payload.email,
+        fullName: responseBody?.fullName?.trim() || null,
+        role: responseBody?.role ?? 'USER',
+        tokenType: responseBody?.tokenType ?? 'Bearer',
+        expiresAt: responseBody?.expiresAt ?? null,
+        token: responseBody?.token ?? null,
+      }
+
+      writeAuthSession(nextSession)
+
+      setFormValues({
+        email: nextSession.email,
         password: '',
       })
 
       setLoginSession({
-        email: responseBody?.email ?? payload.email,
-        role: responseBody?.role ?? 'USER',
-        tokenType: responseBody?.tokenType ?? 'Bearer',
-        expiresAt: responseBody?.expiresAt ?? null,
-        hasToken: Boolean(responseBody?.token),
+        email: nextSession.email,
+        role: nextSession.role,
+        tokenType: nextSession.tokenType,
+        expiresAt: nextSession.expiresAt,
+        hasToken: Boolean(nextSession.token),
       })
 
       const fullName = responseBody?.fullName?.trim()
       setSuccessMessage(fullName ? `Welcome back, ${fullName}.` : 'Login successful.')
+      navigateTo('/')
     } catch (error) {
       setLoginSession(null)
       setErrorMessage(
