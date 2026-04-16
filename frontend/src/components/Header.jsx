@@ -119,7 +119,12 @@ export default function Header() {
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 top-12 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl shadow-slate-900/10">
                     <div className="rounded-xl bg-slate-50 p-3">
-                      <p className="truncate text-sm font-semibold text-slate-900">{profileName}</p>
+                      <a
+                        href="/dashboard"
+                        className="truncate text-sm font-semibold text-slate-900 hover:underline"
+                      >
+                        {profileName}
+                      </a>
                       <p className="truncate text-xs text-slate-500">{profileEmail}</p>
                     </div>
 
@@ -205,7 +210,13 @@ export default function Header() {
                 <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
                   <HiOutlineUserCircle className="h-7 w-7 text-slate-700" />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">{profileName}</p>
+                    <a
+                      href="/dashboard"
+                      className="truncate text-sm font-semibold text-slate-900 hover:underline"
+                      onClick={closeMobileMenu}
+                    >
+                      {profileName}
+                    </a>
                     <p className="truncate text-xs text-slate-500">{profileEmail}</p>
                   </div>
                 </div>
