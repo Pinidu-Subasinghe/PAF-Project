@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import DashboardShell from '../components/user/DashboardShell'
 import Profile from '../components/user/Profile'
+import ChangePassword from '../components/user/ChangePassword'
 import { authSessionChangeEvent, readAuthSession } from '../utils/authSession'
 
 const userNavItems = [
@@ -13,6 +14,11 @@ const userNavItems = [
 		id: 'profile',
 		label: 'Profile',
 		description: 'Your account details',
+	},
+	{
+		id: 'change-password',
+		label: 'Change password',
+		description: 'Update account security',
 	},
 	{
 		id: 'bookings',
@@ -36,6 +42,11 @@ const adminNavItems = [
 		id: 'profile',
 		label: 'Profile',
 		description: 'Your account details',
+	},
+	{
+		id: 'change-password',
+		label: 'Change password',
+		description: 'Update account security',
 	},
 	{
 		id: 'admin-tools',
@@ -136,6 +147,7 @@ export default function UserDashboard() {
 	const contentById = {
 		overview: <OverviewPanel session={session} />,
 		profile: <Profile session={session} />,
+		'change-password': <ChangePassword session={session} />,
 		bookings: (
 			<PlaceholderPanel
 				title="Bookings"

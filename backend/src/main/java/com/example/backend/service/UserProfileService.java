@@ -46,14 +46,26 @@ public class UserProfileService {
         user.setEmail(normalizedEmail);
 
         String newPassword = request.getNewPassword();
+        boolean hasNewPassword = newPassword != null && !newPassword.isBlank();
         boolean passwordSetupRequired = isPasswordSetupRequired(user);
 
-        if (passwordSetupRequired) {
-            if (newPassword == null || newPassword.isBlank()) {
-                throw new InvalidCredentialsException("Google account users must create a password in profile.");
+        if (hasNewPassword) {
+            if (passwordSetupRequired) {
+                // First password setup for OAuth-created accounts does not need a previous password.
+            } else {
+                String currentPassword = request.getCurrentPassword();
+                if (currentPassword == null || currentPassword.isBlank()) {
+                    throw new InvalidCredentialsException("Current password is required to change your password.");
+                }
+
+                if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+                    throw new InvalidCredentialsException("Current password is incorrect.");
+                }
             }
 
             user.setPasswordHash(passwordEncoder.encode(newPassword));
+        } else if (passwordSetupRequired) {
+            throw new InvalidCredentialsException("Google account users must create a password in profile.");
         }
 
         AppUser savedUser = userRepository.save(user);
