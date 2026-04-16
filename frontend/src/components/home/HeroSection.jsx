@@ -1,70 +1,51 @@
 export default function HeroSection() {
-  return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white/85 px-6 py-14 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-sm sm:px-10 sm:py-16 lg:px-14 lg:py-20">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(250,204,21,0.34)_0%,rgba(251,191,36,0.18)_42%,transparent_72%)]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-32 -right-20 h-[22rem] w-[22rem] rounded-full bg-[radial-gradient(circle_at_40%_40%,rgba(56,189,248,0.26)_0%,rgba(29,78,216,0.16)_44%,transparent_72%)]"
-      />
+	const highlights = [
+		'Unified operations for rooms, labs, equipment, and incidents in one hub.',
+		'Role-based workflow for USER, ADMIN, and optional TECHNICIAN access paths.',
+		'Strong auditability with status transitions, comments, and reason tracking.',
+	]
 
-      <div className="relative z-10 grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr]">
-        <div>
-          <p className="inline-flex rounded-full border border-amber-500/20 bg-amber-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-            Sample Homepage
+  return (
+    <section className="fade-up py-14 lg:py-18">
+      <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="flex h-full flex-col justify-center">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-teal-700">
+            UniPilot
           </p>
-          <h1 className="mt-5 max-w-3xl font-serif text-4xl leading-tight text-slate-900 sm:text-5xl lg:text-6xl">
-            Build a clean landing page with clear sections and strong visual hierarchy.
+          <h1 className="mt-5 max-w-4xl font-serif text-4xl leading-tight text-slate-900 sm:text-5xl lg:text-[3.75rem]">
+            Smart Campus Operations Hub
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-            This homepage demonstrates a section-based layout with a hero, stats, features, workflow, and a final
-            call to action. It is intentionally simple, readable, and easy to extend.
+          <p className="mt-6 max-w-3xl text-base leading-8 text-slate-700 sm:text-lg">
+            A single web platform to manage campus facility bookings, equipment usage, and incident maintenance with
+            clear workflows, role-based access, and traceable operations.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
             <a
-              href="#features"
-              className="rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
+              href="/auth#register"
+              className="rounded-full bg-teal-700 px-7 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-teal-600"
             >
-              Explore Sections
+              Start with Sign up
             </a>
             <a
-              href="#workflow"
-              className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-950"
+              href="#modules"
+              className="rounded-full border border-slate-400 px-7 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-700 transition hover:border-slate-700 hover:text-slate-900"
             >
-              View Flow
+              Explore Modules
             </a>
           </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-md">
-          <div className="rounded-[1.75rem] border border-slate-200 bg-slate-950 p-5 text-white shadow-2xl shadow-slate-950/20">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Overview</p>
-                <p className="mt-1 text-lg font-semibold">Homepage Snapshot</p>
-              </div>
-              <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-semibold text-emerald-300">
-                Ready
-              </span>
-            </div>
-
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {[
-                ['5', 'Sections'],
-                ['100%', 'Responsive'],
-                ['3', 'Feature Cards'],
-                ['1', 'Clear CTA'],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-3xl font-semibold text-white">{value}</p>
-                  <p className="mt-1 text-sm text-slate-400">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="fade-up fade-up-delay-1 flex h-full flex-col justify-center border-l border-slate-300 pl-6 sm:pl-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">What This Platform Delivers</p>
+          <ul className="mt-6 space-y-6">
+            {highlights.map((item) => (
+              <li key={item} className="flex gap-3">
+                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+                <span className="text-sm leading-7 text-slate-700 sm:text-base">{item}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>

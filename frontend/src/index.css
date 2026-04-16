@@ -9,5 +9,56 @@
   body {
     margin: 0;
     font-family: var(--font-sans);
+    background: #f4f7f9;
+    color: #0f172a;
+  }
+}
+
+@layer utilities {
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+
+    50% {
+      transform: translate3d(-18px, -14px, 0);
+    }
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 22px, 0);
+    }
+
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .animate-drift {
+    animation: drift 14s ease-in-out infinite;
+  }
+
+  .fade-up {
+    animation: fadeUp 680ms ease-out both;
+  }
+
+  .fade-up-delay-1 {
+    animation-delay: 120ms;
+  }
+
+  .fade-up-delay-2 {
+    animation-delay: 220ms;
+  }
+
+  .fade-up-delay-3 {
+    animation-delay: 320ms;
+  }
+
+  .fade-up-delay-4 {
+    animation-delay: 420ms;
   }
 }

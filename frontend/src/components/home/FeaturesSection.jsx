@@ -1,44 +1,69 @@
-const features = [
+const modules = [
   {
-    title: 'Hero-first structure',
-    description: 'Put the main message up front with a strong heading, supporting text, and two clear actions.',
+    code: 'A',
+    title: 'Facilities & Assets Catalogue',
+    description: 'Manage lecture halls, labs, meeting rooms, and equipment with searchable metadata.',
+    highlights: ['Type, capacity, location', 'Availability windows', 'ACTIVE / OUT_OF_SERVICE statuses'],
   },
   {
-    title: 'Section-based design',
-    description: 'Break the page into focused blocks so each area has one job and stays easy to maintain.',
+    code: 'B',
+    title: 'Booking Management',
+    description: 'Capture booking requests and drive approvals with conflict detection and reasoned decisions.',
+    highlights: ['PENDING to APPROVED/REJECTED', 'Conflict prevention', 'Admin review with reason'],
   },
   {
-    title: 'Polished visuals',
-    description: 'Use soft gradients, borders, and spacing to make the page feel intentional without clutter.',
+    code: 'C',
+    title: 'Maintenance & Incident Ticketing',
+    description: 'Handle incidents by priority, attachments, assignments, and technician resolution notes.',
+    highlights: ['Up to 3 evidence images', 'OPEN to CLOSED workflow', 'Comment ownership rules'],
+  },
+  {
+    code: 'D',
+    title: 'Notifications',
+    description: 'Deliver in-app updates for booking decisions, ticket state changes, and comments.',
+    highlights: ['Approval/rejection alerts', 'Ticket updates', 'Notification panel in web UI'],
+  },
+  {
+    code: 'E',
+    title: 'Authentication & Authorization',
+    description: 'Secure access through OAuth 2.0 login, role checks, and protected routes/endpoints.',
+    highlights: ['Google sign-in ready', 'USER and ADMIN minimum', 'RBAC for API and front-end'],
   },
 ]
 
 export default function FeaturesSection() {
   return (
-    <section id="features" className="rounded-[2rem] border border-slate-200 bg-white px-6 py-12 shadow-[0_20px_40px_rgba(15,23,42,0.06)] sm:px-10">
-      <div className="max-w-2xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">Features</p>
-        <h2 className="mt-3 font-serif text-3xl text-slate-900 sm:text-4xl">Each section stays focused and reusable.</h2>
-        <p className="mt-4 text-slate-600">
-          The page is split into components so you can swap, reorder, or extend sections without rewriting the whole
-          layout.
+    <section id="modules" className="fade-up fade-up-delay-2 scroll-mt-28">
+      <div className="max-w-3xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-700">Core Feature Modules</p>
+        <h2 className="mt-3 font-serif text-3xl text-slate-900 sm:text-4xl lg:text-5xl">
+          Built for real campus operations, not isolated tools.
+        </h2>
+        <p className="mt-5 text-base leading-8 text-slate-700">
+          Each module maps directly to your assignment requirements and can be implemented as clean REST resources
+          with role-aware front-end experiences.
         </p>
       </div>
 
-      <div className="mt-8 grid gap-5 lg:grid-cols-3">
-        {features.map((feature, index) => (
-          <article
-            key={feature.title}
-            className="rounded-3xl border border-slate-200 bg-slate-50/80 p-6 transition hover:-translate-y-1 hover:bg-white hover:shadow-[0_18px_36px_rgba(15,23,42,0.08)]"
-          >
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-sm font-semibold text-white">
-              0{index + 1}
+      <ol className="mt-10 divide-y divide-slate-300 border-y border-slate-300">
+        {modules.map((module) => (
+          <li key={module.code} className="grid items-center gap-4 py-7 md:grid-cols-[4.5rem_1fr] md:gap-8">
+            <p className="font-serif text-4xl leading-none text-amber-600">{module.code}</p>
+            <div className="flex h-full flex-col justify-center">
+              <h3 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{module.title}</h3>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-700 sm:text-base">{module.description}</p>
+              <ul className="mt-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
+                {module.highlights.map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <h3 className="mt-4 font-serif text-2xl text-slate-900">{feature.title}</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{feature.description}</p>
-          </article>
+          </li>
         ))}
-      </div>
+      </ol>
     </section>
   )
 }
