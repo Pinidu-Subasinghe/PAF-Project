@@ -41,10 +41,17 @@ function getAuthHeader() {
   return { Authorization: `${tokenType} ${session.token}` }
 }
 
-export async function registerUser(registerPayload) {
+export async function requestRegistrationOtp(registerPayload) {
   return request('/api/v1/auth/register', {
     method: 'POST',
     body: registerPayload,
+  })
+}
+
+export async function verifyRegistrationOtp(verifyPayload) {
+  return request('/api/v1/auth/register/verify-otp', {
+    method: 'POST',
+    body: verifyPayload,
   })
 }
 
