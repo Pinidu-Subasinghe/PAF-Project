@@ -32,6 +32,22 @@ public class GlobalExceptionHandler {
                 return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
         }
 
+        @ExceptionHandler(InvalidOtpException.class)
+        public ResponseEntity<ApiError> handleInvalidOtp(
+                        InvalidOtpException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        }
+
+        @ExceptionHandler(OtpDeliveryException.class)
+        public ResponseEntity<ApiError> handleOtpDelivery(
+                        OtpDeliveryException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+        }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(
             MethodArgumentNotValidException ex,
