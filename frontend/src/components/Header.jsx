@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { HiOutlineBell, HiOutlineUserCircle } from 'react-icons/hi2'
 import NotificationFloatingModal from './NotificationFloatingModal'
 import { getMyNotifications, markNotificationAsRead } from '../api/api'
+import uniPilotBrandLogo from '../assets/UniPilot2-nobg.png'
 import {
   authSessionChangeEvent,
   clearAuthSession,
@@ -227,8 +228,13 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-slate-300/70 bg-[#f9fcfd]/90 backdrop-blur-md supports-[backdrop-filter]:bg-[#f9fcfd]/80">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-3 md:py-4">
-          <a href="/" className="font-serif text-lg font-semibold tracking-wide text-slate-900 sm:text-xl">
-            UniPilot
+          <a href="/" className="inline-flex items-center gap-1 font-serif text-lg font-semibold tracking-wide text-slate-900 sm:text-xl">
+            <img
+              src={uniPilotBrandLogo}
+              alt="UniPilot"
+              className="h-9 w-9 object-contain sm:h-9 sm:w-9"
+            />
+            <span>UniPilot</span>
           </a>
 
           <div className="hidden items-center gap-3 md:flex">
