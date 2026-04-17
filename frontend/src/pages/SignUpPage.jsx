@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Swal from 'sweetalert2'
 import { requestRegistrationOtp, verifyRegistrationOtp } from '../api/api'
 import { startGoogleOAuth } from '../utils/googleOAuth'
 
@@ -52,6 +53,11 @@ function formatOtpExpiry(expiresAt) {
   return `at ${parsedDate.toLocaleTimeString()}.`
 }
 
+function navigateTo(pathname) {
+  window.history.pushState(null, '', pathname)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
+
 export default function SignUpPage() {
   const [formValues, setFormValues] = useState(initialFormState)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -59,7 +65,6 @@ export default function SignUpPage() {
   const [isResendingOtp, setIsResendingOtp] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
-  const [registeredUser, setRegisteredUser] = useState(null)
   const [otpStep, setOtpStep] = useState(false)
   const [otpExpiresAt, setOtpExpiresAt] = useState(null)
 
@@ -85,7 +90,6 @@ export default function SignUpPage() {
     event.preventDefault()
     setErrorMessage('')
     setSuccessMessage('')
-    setRegisteredUser(null)
 
     const validationError = validateRegistrationDetails(formValues)
     if (validationError) {
@@ -137,23 +141,21 @@ export default function SignUpPage() {
     setIsVerifyingOtp(true)
 
     try {
-      const responseBody = await verifyRegistrationOtp({
+      await verifyRegistrationOtp({
         email: formValues.email.trim(),
         otp: formValues.otp.trim(),
-      })
-
-      setRegisteredUser({
-        id: responseBody?.id ?? null,
-        fullName: responseBody?.fullName ?? formValues.fullName.trim(),
-        email: responseBody?.email ?? formValues.email.trim(),
-        role: responseBody?.role ?? 'USER',
-        createdAt: responseBody?.createdAt ?? null,
       })
 
       setFormValues(initialFormState)
       setOtpStep(false)
       setOtpExpiresAt(null)
-      setSuccessMessage('Email verified and account created successfully. Please sign in.')
+      setSuccessMessage('')
+      await Swal.fire({
+        title: 'Your account is now active!',
+        icon: 'success',
+        draggable: true,
+      })
+      navigateTo('/')
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -350,13 +352,6 @@ export default function SignUpPage() {
             <p className="mt-4 text-sm text-green-600">{successMessage}</p>
           )}
 
-          {registeredUser && (
-            <div className="mt-4 text-sm text-slate-600">
-              <p><strong>Name:</strong> {registeredUser.fullName}</p>
-              <p><strong>Email:</strong> {registeredUser.email}</p>
-              <p><strong>Role:</strong> {registeredUser.role}</p>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
