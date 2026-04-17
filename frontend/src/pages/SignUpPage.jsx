@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
 import { requestRegistrationOtp, verifyRegistrationOtp } from '../api/api'
 import { startGoogleOAuth } from '../utils/googleOAuth'
+import { writeAuthSession } from '../utils/authSession'
 
 const initialFormState = {
   fullName: '',
@@ -141,10 +142,22 @@ export default function SignUpPage() {
     setIsVerifyingOtp(true)
 
     try {
-      await verifyRegistrationOtp({
+      const responseBody = await verifyRegistrationOtp({
         email: formValues.email.trim(),
         otp: formValues.otp.trim(),
       })
+
+      const nextSession = {
+        email: responseBody?.email ?? formValues.email.trim(),
+        fullName: responseBody?.fullName?.trim() || formValues.fullName.trim(),
+        role: responseBody?.role ?? 'USER',
+        tokenType: responseBody?.tokenType ?? 'Bearer',
+        expiresAt: responseBody?.expiresAt ?? null,
+        token: responseBody?.token ?? null,
+        passwordSetupRequired: responseBody?.passwordSetupRequired ?? false,
+      }
+
+      writeAuthSession(nextSession)
 
       setFormValues(initialFormState)
       setOtpStep(false)

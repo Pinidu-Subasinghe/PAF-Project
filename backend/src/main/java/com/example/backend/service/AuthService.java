@@ -5,7 +5,6 @@ import com.example.backend.dto.request.RegisterRequest;
 import com.example.backend.dto.request.VerifyRegistrationOtpRequest;
 import com.example.backend.dto.response.LoginResponse;
 import com.example.backend.dto.response.OtpRequestResponse;
-import com.example.backend.dto.response.RegisterResponse;
 import com.example.backend.entity.AppUser;
 import com.example.backend.entity.PendingRegistrationOtp;
 import com.example.backend.enums.Role;
@@ -85,7 +84,7 @@ public class AuthService {
     }
 
     @Transactional
-    public RegisterResponse verifyRegistrationOtp(VerifyRegistrationOtpRequest request) {
+    public LoginResponse verifyRegistrationOtp(VerifyRegistrationOtpRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
 
         if (userRepository.existsByEmail(normalizedEmail)) {
@@ -115,12 +114,16 @@ public class AuthService {
         AppUser savedUser = userRepository.save(user);
         pendingRegistrationOtpRepository.delete(pendingRegistrationOtp);
 
-        return new RegisterResponse(
-                savedUser.getId(),
-                savedUser.getFullName(),
-                savedUser.getEmail(),
-                savedUser.getRole().name(),
-                savedUser.getCreatedAt()
+        JwtToken token = jwtService.generateToken(savedUser);
+
+        return new LoginResponse(
+            token.token(),
+            "Bearer",
+            token.expiresAt(),
+            savedUser.getEmail(),
+            savedUser.getFullName(),
+            savedUser.getRole().name(),
+            isPasswordSetupRequired(savedUser)
         );
     }
 

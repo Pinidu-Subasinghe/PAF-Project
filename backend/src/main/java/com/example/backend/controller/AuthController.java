@@ -5,7 +5,6 @@ import com.example.backend.dto.request.RegisterRequest;
 import com.example.backend.dto.request.VerifyRegistrationOtpRequest;
 import com.example.backend.dto.response.LoginResponse;
 import com.example.backend.dto.response.OtpRequestResponse;
-import com.example.backend.dto.response.RegisterResponse;
 import com.example.backend.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -32,8 +31,8 @@ public class AuthController {
     }
 
     @PostMapping("/register/verify-otp")
-    public ResponseEntity<RegisterResponse> verifyRegistrationOtp(@Valid @RequestBody VerifyRegistrationOtpRequest request) {
-        RegisterResponse response = authService.verifyRegistrationOtp(request);
+    public ResponseEntity<LoginResponse> verifyRegistrationOtp(@Valid @RequestBody VerifyRegistrationOtpRequest request) {
+        LoginResponse response = authService.verifyRegistrationOtp(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
