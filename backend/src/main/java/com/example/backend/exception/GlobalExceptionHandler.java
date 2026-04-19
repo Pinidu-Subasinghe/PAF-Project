@@ -77,9 +77,25 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, "Request conflicts with existing data", request);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
         @ExceptionHandler(NotificationNotFoundException.class)
         public ResponseEntity<ApiError> handleNotificationNotFound(
                         NotificationNotFoundException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        }
+
+        @ExceptionHandler(ResourceNotFoundException.class)
+        public ResponseEntity<ApiError> handleResourceNotFound(
+                        ResourceNotFoundException ex,
                         HttpServletRequest request
         ) {
                 return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);

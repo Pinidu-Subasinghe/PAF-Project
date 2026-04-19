@@ -11,6 +11,7 @@ import {
 
 const navLinks = [
   { label: 'Home', href: '/' },
+  { label: 'Facilities', href: '/resources' },
   { label: 'Modules', href: '/#modules' },
   { label: 'Workflow', href: '/#workflow' },
   { label: 'Deliverables', href: '/#deliverables' },
@@ -280,6 +281,17 @@ export default function Header() {
                       <button
                         type="button"
                         className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false)
+                          navigateTo('/admin/resources')
+                        }}
+                      >
+                        Manage resources
+                      </button>
+
+                      <button
+                        type="button"
+                        className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
                         onClick={handleLogout}
                       >
                         Log out
@@ -374,6 +386,14 @@ export default function Header() {
                     <p className="truncate text-xs text-slate-500">{profileEmail}</p>
                   </div>
                 </div>
+
+                <a
+                  href="/admin/resources"
+                  className="block w-full rounded-xl border border-slate-300 px-4 py-2 text-center text-sm font-semibold text-slate-700 transition hover:border-slate-500"
+                  onClick={closeMobileMenu}
+                >
+                  Manage resources
+                </a>
 
                 <button
                   type="button"

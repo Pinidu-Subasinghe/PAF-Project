@@ -89,3 +89,39 @@ export async function markNotificationAsRead(notificationId) {
     headers: getAuthHeader(),
   })
 }
+
+export async function getResources(filters = {}) {
+  const searchParams = new URLSearchParams()
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && `${value}`.trim() !== '') {
+      searchParams.set(key, value)
+    }
+  })
+
+  const query = searchParams.toString()
+  return request(`/api/v1/resources${query ? `?${query}` : ''}`)
+}
+
+export async function createResource(resourcePayload) {
+  return request('/api/v1/resources', {
+    method: 'POST',
+    body: resourcePayload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function updateResource(resourceId, resourcePayload) {
+  return request(`/api/v1/resources/${resourceId}`, {
+    method: 'PUT',
+    body: resourcePayload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function deleteResource(resourceId) {
+  return request(`/api/v1/resources/${resourceId}`, {
+    method: 'DELETE',
+    headers: getAuthHeader(),
+  })
+}

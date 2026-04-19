@@ -210,7 +210,7 @@ export default function UserDashboard() {
 				title="Admin tools"
 				description="Manage approvals, users, and system updates."
 				items={[
-					{ title: 'User approvals', detail: '4 pending requests' },
+					{ title: 'Resource manager', detail: 'Open /admin/resources to manage the facilities catalogue.' },
 					{ title: 'Facility alerts', detail: '2 new incidents' },
 				]}
 			/>
