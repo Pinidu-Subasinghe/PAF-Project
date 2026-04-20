@@ -1,85 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import DashboardShell from '../components/user/DashboardShell'
+import DashboardShell from '../components/DashboardShell'
 import Profile from '../components/user/Profile'
 import ChangePassword from '../components/user/ChangePassword'
 import { authSessionChangeEvent, readAuthSession } from '../utils/authSession'
-
-const userNavItems = [
-	{
-		id: 'overview',
-		label: 'Overview',
-		description: 'Quick status snapshot',
-	},
-	{
-		id: 'profile',
-		label: 'Profile',
-		description: 'Your account details',
-	},
-	{
-		id: 'change-password',
-		label: 'Change password',
-		description: 'Update account security',
-	},
-	{
-		id: 'bookings',
-		label: 'Bookings',
-		description: 'Spaces and reservations',
-	},
-	{
-		id: 'requests',
-		label: 'Requests',
-		description: 'Maintenance and support',
-	},
-]
-
-const adminNavItems = [
-	{
-		id: 'overview',
-		label: 'Overview',
-		description: 'Campus operations',
-	},
-	{
-		id: 'profile',
-		label: 'Profile',
-		description: 'Your account details',
-	},
-	{
-		id: 'change-password',
-		label: 'Change password',
-		description: 'Update account security',
-	},
-	{
-		id: 'admin-tools',
-		label: 'Admin tools',
-		description: 'Users and approvals',
-	},
-]
-
-function OverviewPanel({ session }) {
-	const displayName = session?.fullName?.trim() || session?.email || 'Campus User'
-	const role = session?.role ?? 'USER'
-
-	return (
-		<div className="space-y-4">
-			<div>
-				<h2 className="text-xl font-semibold text-slate-900">Welcome back, {displayName}</h2>
-				<p className="mt-1 text-sm text-slate-500">Role: {role}</p>
-			</div>
-			<div className="grid gap-3 sm:grid-cols-2">
-				<div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-					<p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Active items</p>
-					<p className="mt-2 text-lg font-semibold text-slate-900">3 open tasks</p>
-					<p className="mt-1 text-xs text-slate-500">Bookings, requests, and alerts.</p>
-				</div>
-				<div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-					<p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Next reminder</p>
-					<p className="mt-2 text-lg font-semibold text-slate-900">Today, 3:00 PM</p>
-					<p className="mt-1 text-xs text-slate-500">Weekly dashboard review.</p>
-				</div>
-			</div>
-		</div>
-	)
-}
+import { userNavItems, adminNavItems } from '../utils/dashboardNav'
 
 function PlaceholderPanel({ title, description, items }) {
 	return (
@@ -182,12 +106,11 @@ export default function UserDashboard() {
 	}, [navItems])
 
 	const contentById = {
-		overview: <OverviewPanel session={session} />,
 		profile: <Profile session={session} />,
 		'change-password': <ChangePassword session={session} />,
-		bookings: (
+		'my-bookings': (
 			<PlaceholderPanel
-				title="Bookings"
+				title="My bookings"
 				description="Review your recent reservations and upcoming space usage."
 				items={[
 					{ title: 'Library study room', detail: 'Tomorrow, 10:00 AM' },
@@ -195,36 +118,29 @@ export default function UserDashboard() {
 				]}
 			/>
 		),
-		requests: (
+		'my-tickets': (
 			<PlaceholderPanel
-				title="Service requests"
-				description="Track maintenance and support requests in progress."
+				title="My tickets"
+				description="View your support tickets and their statuses."
 				items={[
-					{ title: 'AC maintenance', detail: 'Status: Scheduled' },
-					{ title: 'Projector repair', detail: 'Status: In review' },
-				]}
-			/>
-		),
-		'admin-tools': (
-			<PlaceholderPanel
-				title="Admin tools"
-				description="Manage approvals, users, and system updates."
-				items={[
-					{ title: 'User approvals', detail: '4 pending requests' },
-					{ title: 'Facility alerts', detail: '2 new incidents' },
+					{ title: 'Ticket #123', detail: 'Status: Open' },
+					{ title: 'Ticket #98', detail: 'Status: In review' },
 				]}
 			/>
 		),
 	}
 
-	const activeContent = contentById[activeItemId] ?? contentById.overview
+	const activeContent = contentById[activeItemId] ?? contentById.profile
+
 
 	return (
 		<DashboardShell
 			title={role === 'ADMIN' ? 'Admin Dashboard' : 'User Dashboard'}
-			subtitle={role === 'ADMIN'
-				? 'Monitor campus operations and administrative tasks.'
-				: 'Track your campus activity and services in one place.'}
+			subtitle={
+				role === 'ADMIN'
+					? 'Monitor campus operations and administrative tasks.'
+					: 'Track your campus activity and services in one place.'
+			}
 			items={navItems}
 			activeItemId={activeItemId}
 			onSelect={setActiveItemId}

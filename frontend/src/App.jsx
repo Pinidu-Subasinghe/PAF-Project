@@ -6,10 +6,17 @@ import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import UserDashboard from './pages/UserDashboard'
+import AdminDashboard from './pages/AdminDashboard'
+import ResourcesPage from './pages/ResourcesPage'
+import AdminResourcesPage from './components/admin/AdminResourcesPage'
+import AllResourcesPage from './pages/AllResourcesPage'
+import ResourceDetailsCard from './components/ResourceDetailsCard'
 import { consumeGoogleOAuthRedirect } from './utils/googleOAuth'
+import { readAuthSession, authSessionChangeEvent } from './utils/authSession'
 
 function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
+  const [session, setSession] = useState(() => readAuthSession())
 
   useEffect(() => {
     const handleLocationChange = () => {
@@ -40,9 +47,25 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    const syncSession = () => setSession(readAuthSession())
+
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(authSessionChangeEvent, syncSession)
+
+    return () => {
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(authSessionChangeEvent, syncSession)
+    }
+  }, [])
+
   const isLoginPage = currentPath.startsWith('/login') || currentPath.startsWith('/auth')
   const isSignUpPage = currentPath.startsWith('/signup') || currentPath.startsWith('/register')
   const isDashboardPage = currentPath.startsWith('/dashboard') || currentPath.startsWith('/user')
+  const isResourceDetailsPage = currentPath.startsWith('/resources/') && currentPath.length > '/resources/'.length
+  const isResourcesPage = currentPath.startsWith('/resources') && !isResourceDetailsPage
+  const isAdminResourcesPage = currentPath.startsWith('/admin/resources')
+  const isAllResourcesPage = currentPath.startsWith('/admin/all-resources')
 
   const isAuthPage = isLoginPage || isSignUpPage
   const showChrome = !isAuthPage
@@ -61,9 +84,17 @@ function App() {
           ? <SignUpPage />
           : isLoginPage
             ? <LoginPage />
-            : isDashboardPage
-              ? <UserDashboard />
-              : <HomePage />}
+            : isAdminResourcesPage
+              ? <AdminResourcesPage />
+              : isAllResourcesPage
+                ? <AllResourcesPage />
+                : isResourceDetailsPage
+                  ? <ResourceDetailsCard />
+                : isResourcesPage
+                  ? <ResourcesPage />
+              : isDashboardPage
+                ? (session?.role === 'ADMIN' ? <AdminDashboard /> : <UserDashboard />)
+                : <HomePage />}
       </div>
       {showScrollToTop && <ScrollToTopButton />}
       {showFooter && <Footer />}
