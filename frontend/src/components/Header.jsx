@@ -41,6 +41,7 @@ export default function Header() {
   const [isNotificationMenuOpen, setIsNotificationMenuOpen] = useState(false)
   const [isMobileView, setIsMobileView] = useState(() => window.innerWidth < 768)
   const [notifications, setNotifications] = useState([])
+  const [notificationsTotal, setNotificationsTotal] = useState(0)
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(false)
   const [notificationsError, setNotificationsError] = useState('')
   const [authSession, setAuthSession] = useState(() => readAuthSession())
@@ -51,7 +52,7 @@ export default function Header() {
   const isAuthenticated = Boolean(authSession)
   const profileName = authSession?.fullName?.trim() || authSession?.email || 'Campus User'
   const profileEmail = authSession?.email || 'Logged in'
-  const unreadNotificationCount = notifications.length
+  const unreadNotificationCount = notifications.filter((n) => !n.read).length
   const hasNotifications = unreadNotificationCount > 0
   const unreadBadgeLabel = unreadNotificationCount > 9 ? '9+' : unreadNotificationCount
 
@@ -107,7 +108,17 @@ export default function Header() {
     try {
       const response = await getMyNotifications()
       if (notificationsFetchIdRef.current !== currentId) return
-      setNotifications(Array.isArray(response) ? response : [])
+
+      if (Array.isArray(response)) {
+        setNotifications(response)
+        setNotificationsTotal(response.length)
+      } else if (response && Array.isArray(response.notifications)) {
+        setNotifications(response.notifications)
+        setNotificationsTotal(Number(response.total) || response.notifications.length)
+      } else {
+        setNotifications([])
+        setNotificationsTotal(0)
+      }
     } catch (error) {
       if (notificationsFetchIdRef.current !== currentId) return
       setNotifications([])
@@ -181,7 +192,9 @@ export default function Header() {
       try {
         await markNotificationAsRead(notification.id)
         setNotifications((currentNotifications) => (
-          currentNotifications.filter((item) => item.id !== notification.id)
+          currentNotifications.map((item) => (
+            item.id === notification.id ? { ...item, read: true, readAt: new Date().toISOString() } : item
+          ))
         ))
         setNotificationsError('')
       } catch (error) {
@@ -222,6 +235,7 @@ export default function Header() {
         errorMessage={notificationsError}
         unreadBadgeLabel={unreadBadgeLabel}
         onNavigate={handleNotificationNavigate}
+        total={notificationsTotal}
       />
     </div>
   )

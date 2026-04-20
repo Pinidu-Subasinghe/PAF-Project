@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -42,11 +43,26 @@ public class NotificationService {
     @Transactional(readOnly = true)
     public List<NotificationResponse> listUnreadByUserEmail(String email) {
         AppUser user = findByEmail(email);
-
-        return notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(user.getId())
+        return notificationRepository.findTop3ByUserIdOrderByCreatedAtDesc(user.getId())
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public int countNotificationsByUserEmail(String email) {
+        AppUser user = findByEmail(email);
+        return (int) notificationRepository.countByUserId(user.getId());
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 * * * *") // runs hourly
+    public void cleanupOldNotifications() {
+        java.time.Instant cutoff = java.time.Instant.now().minusSeconds(72 * 3600L);
+        long deleted = notificationRepository.deleteByCreatedAtBefore(cutoff);
+        if (deleted > 0) {
+            log.info("Deleted {} notifications older than 72 hours", deleted);
+        }
     }
 
     @Transactional

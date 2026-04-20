@@ -14,6 +14,7 @@ export default function NotificationFloatingModal({
   errorMessage,
   unreadBadgeLabel,
   onNavigate,
+  total,
 }) {
   if (!isOpen) {
     return null
@@ -64,6 +65,17 @@ export default function NotificationFloatingModal({
               <p className="mt-1 text-xs text-slate-600">{notification.message}</p>
             </article>
           ))}
+          {typeof total === 'number' && total > notifications.length && (
+            <div className="mt-2 flex justify-center">
+              <button
+                type="button"
+                className="text-sm font-semibold text-slate-700 hover:underline"
+                onClick={() => window.dispatchEvent(new Event('unipilot-notification-view-more'))}
+              >
+                View more
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
