@@ -22,8 +22,8 @@ const adminNavItems = [
   },
   {
     id: 'manage-resources',
-    label: 'Manage resources',
-    description: 'Manage campus facilities',
+    label: 'Add Resources',
+    description: 'Add new campus facilities',
   },
 ]
 

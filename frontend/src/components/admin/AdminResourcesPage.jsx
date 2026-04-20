@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { createResource, deleteResource, getResources, updateResource } from '../../api/api'
+import { useState } from 'react'
+import { createResource, updateResource } from '../../api/api'
 import { readAuthSession } from '../../utils/authSession'
 
 const initialFormState = {
@@ -11,11 +11,19 @@ const initialFormState = {
   availableTo: '17:00',
   status: 'ACTIVE',
   description: '',
+  equipment: {
+    category: 'PROJECTOR',
+    brand: '',
+    model: '',
+    serialNumber: '',
+    purchaseDate: '',
+    notes: '',
+  },
 }
 
 const typeOptions = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
 const statusOptions = ['ACTIVE', 'OUT_OF_SERVICE']
-
+const equipmentCategoryOptions = ['PROJECTOR', 'SMART_BOARD', 'SPEAKER', 'MICROPHONE', 'CAMERA', 'OTHER']
 function formatEnumLabel(value) {
   return value
     ?.toLowerCase()
@@ -34,49 +42,26 @@ function mapResourceToForm(resource) {
     availableTo: resource.availableTo ?? '17:00',
     status: resource.status ?? 'ACTIVE',
     description: resource.description ?? '',
+    equipment: {
+      category: resource?.equipment?.category ?? initialFormState.equipment.category,
+      brand: resource?.equipment?.brand ?? '',
+      model: resource?.equipment?.model ?? '',
+      serialNumber: resource?.equipment?.serialNumber ?? '',
+      purchaseDate: resource?.equipment?.purchaseDate ?? '',
+      notes: resource?.equipment?.notes ?? '',
+    },
   }
 }
 
 export default function AdminResourcesPage() {
   const [session] = useState(() => readAuthSession())
-  const [resources, setResources] = useState([])
   const [formState, setFormState] = useState(initialFormState)
   const [editingResourceId, setEditingResourceId] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [pageMessage, setPageMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
   const isAdmin = session?.role === 'ADMIN'
-
-  const previewResource = {
-    name: formState.name || 'Resource name',
-    type: formState.type,
-    capacity: Number(formState.capacity) || 1,
-    location: formState.location || 'Location',
-    availableFrom: formState.availableFrom || '08:00',
-    availableTo: formState.availableTo || '17:00',
-    status: formState.status,
-    description: formState.description || 'No description added yet.',
-  }
-
-  const loadResources = async () => {
-    setIsLoading(true)
-    setErrorMessage('')
-
-    try {
-      const response = await getResources()
-      setResources(Array.isArray(response) ? response : [])
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to load resources.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadResources()
-  }, [])
 
   const resetForm = () => {
     setFormState(initialFormState)
@@ -95,6 +80,20 @@ export default function AdminResourcesPage() {
       description: formState.description.trim(),
     }
 
+    // include equipment only for equipment resources
+    if (formState.type === 'EQUIPMENT') {
+      payload.equipment = {
+        category: formState.equipment?.category || initialFormState.equipment.category,
+        brand: formState.equipment?.brand?.trim() || null,
+        model: formState.equipment?.model?.trim() || null,
+        serialNumber: formState.equipment?.serialNumber?.trim() || null,
+        purchaseDate: formState.equipment?.purchaseDate || null,
+        notes: formState.equipment?.notes?.trim() || null,
+      }
+    } else {
+      delete payload.equipment
+    }
+
     try {
       if (editingResourceId) {
         await updateResource(editingResourceId, payload)
@@ -105,7 +104,6 @@ export default function AdminResourcesPage() {
       }
 
       resetForm()
-      await loadResources()
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to save the resource.')
     } finally {
@@ -113,34 +111,7 @@ export default function AdminResourcesPage() {
     }
   }
 
-  const handleEdit = (resource) => {
-    setFormState(mapResourceToForm(resource))
-    setEditingResourceId(resource.id)
-    setPageMessage('')
-    setErrorMessage('')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const handleDelete = async (resourceId) => {
-    const confirmed = window.confirm('Delete this resource?')
-    if (!confirmed) {
-      return
-    }
-
-    setErrorMessage('')
-    setPageMessage('')
-
-    try {
-      await deleteResource(resourceId)
-      setPageMessage('Resource deleted successfully.')
-      if (editingResourceId === resourceId) {
-        resetForm()
-      }
-      await loadResources()
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to delete the resource.')
-    }
-  }
+  
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#cffafe_0,#f8fafc_36%,#ffffff_100%)]">
@@ -185,7 +156,7 @@ export default function AdminResourcesPage() {
           )}
         </section>
 
-        <div className="mt-8 grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="mt-8">
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -224,7 +195,14 @@ export default function AdminResourcesPage() {
                 Type
                 <select
                   value={formState.type}
-                  onChange={(event) => setFormState((current) => ({ ...current, type: event.target.value }))}
+                  onChange={(event) => {
+                    const newType = event.target.value
+                    setFormState((current) => ({
+                      ...current,
+                      type: newType,
+                      equipment: newType === 'EQUIPMENT' ? (current.equipment ?? initialFormState.equipment) : initialFormState.equipment,
+                    }))
+                  }}
                   className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 >
                   {typeOptions.map((option) => (
@@ -303,6 +281,82 @@ export default function AdminResourcesPage() {
                 />
               </label>
 
+              {formState.type === 'EQUIPMENT' && (
+                <div className="md:col-span-2 rounded-xl border border-slate-100 bg-slate-50 p-4">
+                  <h3 className="text-lg font-semibold text-slate-900">Equipment Details</h3>
+                  <p className="mt-1 text-sm text-slate-500">Provide metadata for equipment (brand, model, serial, purchase date).</p>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <label className="grid gap-2 text-sm font-medium text-slate-700">
+                      Category
+                      <select
+                        value={formState.equipment.category}
+                        onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, category: e.target.value } }))}
+                        className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                      >
+                        {equipmentCategoryOptions.map((opt) => (
+                          <option key={opt} value={opt}>{formatEnumLabel(opt)}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="grid gap-2 text-sm font-medium text-slate-700">
+                      Brand
+                      <input
+                        type="text"
+                        value={formState.equipment.brand}
+                        onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, brand: e.target.value } }))}
+                        className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                        placeholder="e.g., Epson"
+                      />
+                    </label>
+
+                    <label className="grid gap-2 text-sm font-medium text-slate-700">
+                      Model
+                      <input
+                        type="text"
+                        value={formState.equipment.model}
+                        onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, model: e.target.value } }))}
+                        className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                        placeholder="e.g., EB-X41"
+                      />
+                    </label>
+
+                    <label className="grid gap-2 text-sm font-medium text-slate-700">
+                      Serial #
+                      <input
+                        type="text"
+                        value={formState.equipment.serialNumber}
+                        onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, serialNumber: e.target.value } }))}
+                        className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                        placeholder="Optional"
+                      />
+                    </label>
+
+                    <label className="grid gap-2 text-sm font-medium text-slate-700">
+                      Purchase Date
+                      <input
+                        type="date"
+                        value={formState.equipment.purchaseDate || ''}
+                        onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, purchaseDate: e.target.value } }))}
+                        className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                      />
+                    </label>
+
+                    <label className="grid gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                      Notes
+                      <textarea
+                        rows="3"
+                        value={formState.equipment.notes}
+                        onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, notes: e.target.value } }))}
+                        className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                        placeholder="Optional notes about this equipment"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div className="md:col-span-2 flex flex-wrap gap-3">
                 <button
                   type="submit"
@@ -324,98 +378,6 @@ export default function AdminResourcesPage() {
                 </button>
               </div>
             </form>
-          </section>
-
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
-            <h3 className="text-xl font-semibold text-slate-900">Live Preview</h3>
-            <article className="mt-3 rounded-2xl border border-slate-200 p-4 bg-slate-50">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">{formatEnumLabel(previewResource.type)}</p>
-                  <h3 className="mt-2 text-lg font-semibold text-slate-900">{previewResource.name || 'Resource name'}</h3>
-                  <p className="mt-1 text-sm text-slate-500">{previewResource.location} • Capacity {previewResource.capacity}</p>
-                  <p className="mt-2 text-xs text-slate-500">Available {previewResource.availableFrom} to {previewResource.availableTo}</p>
-                </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${previewResource.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                  {formatEnumLabel(previewResource.status)}
-                </span>
-              </div>
-
-              <p className="mt-3 text-sm text-slate-600">{previewResource.description}</p>
-            </article>
-          </section>
-
-          <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-semibold text-slate-900">All Resources</h2>
-                <p className="mt-1 text-sm text-slate-500">Review and manage catalogue entries. New resources appear here.</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <a href="/resources" className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900">Open User Catalogue</a>
-                <a href="/admin/all-resources" className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">All Resources</a>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{resources.length} items</span>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {isLoading && (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                  Loading resources...
-                </div>
-              )}
-
-              {!isLoading && resources.length === 0 && (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                  No resources yet. Create the first one with the form.
-                </div>
-              )}
-
-              {!isLoading && resources.map((resource) => (
-                <article key={resource.id} className="rounded-2xl border border-slate-200 p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
-                        {formatEnumLabel(resource.type)}
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-slate-900">{resource.name}</h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {resource.location} • Capacity {resource.capacity}
-                      </p>
-                      <p className="mt-2 text-xs text-slate-500">
-                        Available {resource.availableFrom} to {resource.availableTo}
-                      </p>
-                    </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      resource.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                    }`}>
-                      {formatEnumLabel(resource.status)}
-                    </span>
-                  </div>
-
-                  <p className="mt-3 text-sm text-slate-600">
-                    {resource.description || 'No description added yet.'}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(resource)}
-                      className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(resource.id)}
-                      className="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
           </section>
         </div>
       </div>
