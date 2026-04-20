@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { createResource, updateResource } from '../../api/api'
+import { createResource } from '../../api/api'
 import { readAuthSession } from '../../utils/authSession'
 
 const initialFormState = {
   name: '',
   type: 'LECTURE_HALL',
-  capacity: '40',
+  capacity: '',
   location: '',
   availableFrom: '08:00',
   availableTo: '17:00',
@@ -32,31 +32,11 @@ function formatEnumLabel(value) {
     .join(' ')
 }
 
-function mapResourceToForm(resource) {
-  return {
-    name: resource.name ?? '',
-    type: resource.type ?? 'LECTURE_HALL',
-    capacity: `${resource.capacity ?? 1}`,
-    location: resource.location ?? '',
-    availableFrom: resource.availableFrom ?? '08:00',
-    availableTo: resource.availableTo ?? '17:00',
-    status: resource.status ?? 'ACTIVE',
-    description: resource.description ?? '',
-    equipment: {
-      category: resource?.equipment?.category ?? initialFormState.equipment.category,
-      brand: resource?.equipment?.brand ?? '',
-      model: resource?.equipment?.model ?? '',
-      serialNumber: resource?.equipment?.serialNumber ?? '',
-      purchaseDate: resource?.equipment?.purchaseDate ?? '',
-      notes: resource?.equipment?.notes ?? '',
-    },
-  }
-}
+// Removed unused mapResourceToForm to keep this component focused on resource creation
 
 export default function AdminResourcesPage() {
   const [session] = useState(() => readAuthSession())
   const [formState, setFormState] = useState(initialFormState)
-  const [editingResourceId, setEditingResourceId] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [pageMessage, setPageMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -65,7 +45,6 @@ export default function AdminResourcesPage() {
 
   const resetForm = () => {
     setFormState(initialFormState)
-    setEditingResourceId(null)
   }
 
   const handleSubmit = async (event) => {
@@ -95,14 +74,8 @@ export default function AdminResourcesPage() {
     }
 
     try {
-      if (editingResourceId) {
-        await updateResource(editingResourceId, payload)
-        setPageMessage('Resource updated successfully.')
-      } else {
-        await createResource(payload)
-        setPageMessage('Resource created successfully.')
-      }
-
+      await createResource(payload)
+      setPageMessage('Resource created successfully.')
       resetForm()
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to save the resource.')
@@ -160,22 +133,11 @@ export default function AdminResourcesPage() {
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-semibold text-slate-900">
-                  {editingResourceId ? 'Update Resource' : 'Create New Resource'}
-                </h2>
+                <h2 className="text-2xl font-semibold text-slate-900">Create New Resource</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Build the facility catalogue first. Booking and incident modules can then reference these resources.
                 </p>
               </div>
-              {editingResourceId && (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500"
-                >
-                  Cancel edit
-                </button>
-              )}
             </div>
 
             <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
@@ -363,11 +325,7 @@ export default function AdminResourcesPage() {
                   disabled={isSubmitting}
                   className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSubmitting
-                    ? 'Saving...'
-                    : editingResourceId
-                      ? 'Update Resource'
-                      : 'Create Resource'}
+                  {isSubmitting ? 'Saving...' : 'Create Resource'}
                 </button>
                 <button
                   type="button"
