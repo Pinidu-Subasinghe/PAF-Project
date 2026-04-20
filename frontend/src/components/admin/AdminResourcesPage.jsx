@@ -89,45 +89,25 @@ export default function AdminResourcesPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#cffafe_0,#f8fafc_36%,#ffffff_100%)]">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <section className="rounded-[2rem] border border-slate-200 bg-white/90 p-8 shadow-lg shadow-slate-900/5 backdrop-blur">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-teal-700">Admin Resource Manager</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
-                Create and maintain campus resources.
-              </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
-                This is your member-one admin page. New resources created here appear automatically on the
-                public catalogue page at <span className="font-semibold text-slate-800">/resources</span>.
-              </p>
-            </div>
-            <a
-              href="/resources"
-              className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
-            >
-              Open User Catalogue
-            </a>
+        
+
+        {!isAdmin && (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            You are not signed in as an admin yet. Create calls will only work once your session role becomes <strong>ADMIN</strong>.
           </div>
+        )}
 
-          {!isAdmin && (
-            <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              You are not signed in as an admin yet. The page is ready, but create, update, and delete calls will
-              only work once your friend finishes admin authentication and your session role becomes <strong>ADMIN</strong>.
-            </div>
-          )}
+        {pageMessage && (
+          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {pageMessage}
+          </div>
+        )}
 
-          {pageMessage && (
-            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              {pageMessage}
-            </div>
-          )}
-
-          {errorMessage && (
-            <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {errorMessage}
-            </div>
-          )}
-        </section>
+        {errorMessage && (
+          <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {errorMessage}
+          </div>
+        )}
 
         <div className="mt-8">
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
@@ -138,6 +118,12 @@ export default function AdminResourcesPage() {
                   Build the facility catalogue first. Booking and incident modules can then reference these resources.
                 </p>
               </div>
+              <a
+                href="/resources"
+                className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
+              >
+                View Catalogue
+              </a>
             </div>
 
             <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>

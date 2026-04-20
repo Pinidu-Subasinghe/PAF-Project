@@ -1,19 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getResources } from '../api/api'
-
-const typeOptions = [
-  { value: '', label: 'All types' },
-  { value: 'LECTURE_HALL', label: 'Lecture Hall' },
-  { value: 'LAB', label: 'Lab' },
-  { value: 'MEETING_ROOM', label: 'Meeting Room' },
-  { value: 'EQUIPMENT', label: 'Equipment' },
-]
-
-const statusOptions = [
-  { value: '', label: 'Any status' },
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'OUT_OF_SERVICE', label: 'Out of service' },
-]
+import FiltersPanel from '../components/FiltersPanel'
 
 function formatEnumLabel(value) {
   return value
@@ -72,6 +59,7 @@ export default function ResourcesPage() {
     minCapacity: '',
     location: '',
     status: '',
+    equipmentCategory: '',
   })
   const [resources, setResources] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -120,91 +108,42 @@ export default function ResourcesPage() {
           <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-slate-900">
             Browse rooms, labs, halls, and equipment before you book.
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
-            This page is your member-one user view. Every resource created on the admin side appears here
-            automatically because both screens use the same backend catalogue API.
-          </p>
         </section>
 
-        <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
-          <div className="grid gap-4 md:grid-cols-4">
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Type
-              <select
-                value={filters.type}
-                onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value }))}
-                className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
-              >
-                {typeOptions.map((option) => (
-                  <option key={option.label} value={option.value}>{option.label}</option>
+        <section className="mt-8 grid gap-6 lg:grid-cols-4">
+          <aside className="lg:col-span-1">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+              <FiltersPanel filters={filters} setFilters={setFilters} />
+            </div>
+          </aside>
+
+          <div className="lg:col-span-3">
+            {isLoading && (
+              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600">
+                Loading resources...
+              </div>
+            )}
+
+            {!isLoading && errorMessage && (
+              <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 text-sm text-rose-700">
+                {errorMessage}
+              </div>
+            )}
+
+            {!isLoading && !errorMessage && resources.length === 0 && (
+              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600">
+                No resources match the current filters.
+              </div>
+            )}
+
+            {!isLoading && !errorMessage && resources.length > 0 && (
+              <div className="grid gap-5 lg:grid-cols-2">
+                {resources.map((resource) => (
+                  <ResourceCard key={resource.id} resource={resource} />
                 ))}
-              </select>
-            </label>
-
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Minimum Capacity
-              <input
-                type="number"
-                min="1"
-                value={filters.minCapacity}
-                onChange={(event) => setFilters((current) => ({ ...current, minCapacity: event.target.value }))}
-                className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                placeholder="e.g. 50"
-              />
-            </label>
-
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Location
-              <input
-                type="text"
-                value={filters.location}
-                onChange={(event) => setFilters((current) => ({ ...current, location: event.target.value }))}
-                className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                placeholder="Search building or block"
-              />
-            </label>
-
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Status
-              <select
-                value={filters.status}
-                onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
-                className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.label} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
+              </div>
+            )}
           </div>
-        </section>
-
-        <section className="mt-8">
-          {isLoading && (
-            <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600">
-              Loading resources...
-            </div>
-          )}
-
-          {!isLoading && errorMessage && (
-            <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 text-sm text-rose-700">
-              {errorMessage}
-            </div>
-          )}
-
-          {!isLoading && !errorMessage && resources.length === 0 && (
-            <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600">
-              No resources match the current filters.
-            </div>
-          )}
-
-          {!isLoading && !errorMessage && resources.length > 0 && (
-            <div className="grid gap-5 lg:grid-cols-2">
-              {resources.map((resource) => (
-                <ResourceCard key={resource.id} resource={resource} />
-              ))}
-            </div>
-          )}
         </section>
       </div>
     </main>
