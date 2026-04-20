@@ -103,6 +103,10 @@ export async function getResources(filters = {}) {
   return request(`/api/v1/resources${query ? `?${query}` : ''}`)
 }
 
+export async function getResourceById(resourceId) {
+  return request(`/api/v1/resources/${resourceId}`)
+}
+
 export async function createResource(resourcePayload) {
   return request('/api/v1/resources', {
     method: 'POST',
