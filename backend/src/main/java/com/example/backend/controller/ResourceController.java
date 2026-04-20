@@ -4,6 +4,7 @@ import com.example.backend.dto.request.ResourceUpsertRequest;
 import com.example.backend.dto.response.ResourceResponse;
 import com.example.backend.enums.ResourceStatus;
 import com.example.backend.enums.ResourceType;
+import com.example.backend.enums.EquipmentCategory;
 import com.example.backend.service.ResourceService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -36,9 +37,10 @@ public class ResourceController {
             @RequestParam(required = false) ResourceType type,
             @RequestParam(required = false) Integer minCapacity,
             @RequestParam(required = false) String location,
-            @RequestParam(required = false) ResourceStatus status
+            @RequestParam(required = false) ResourceStatus status,
+            @RequestParam(required = false) EquipmentCategory equipmentCategory
     ) {
-        return ResponseEntity.ok(resourceService.listResources(type, minCapacity, location, status));
+        return ResponseEntity.ok(resourceService.listResources(type, minCapacity, location, status, equipmentCategory));
     }
 
     @GetMapping("/{resourceId}")

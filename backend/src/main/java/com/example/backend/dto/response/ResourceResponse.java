@@ -13,6 +13,7 @@ public record ResourceResponse(
         LocalTime availableTo,
         String status,
         String description,
+        com.example.backend.dto.response.EquipmentMetadataResponse equipment,
         Instant createdAt,
         Instant updatedAt
 ) {

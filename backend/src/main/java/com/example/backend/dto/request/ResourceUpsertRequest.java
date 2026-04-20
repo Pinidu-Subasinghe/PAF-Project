@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalTime;
+import com.example.backend.dto.request.EquipmentMetadataRequest;
 
 public record ResourceUpsertRequest(
         @NotBlank(message = "Resource name is required")
@@ -37,6 +38,8 @@ public record ResourceUpsertRequest(
         ResourceStatus status,
 
         @Size(max = 500, message = "Description must be at most 500 characters")
-        String description
+        String description,
+
+        EquipmentMetadataRequest equipment
 ) {
 }

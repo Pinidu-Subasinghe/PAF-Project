@@ -6,12 +6,15 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.CascadeType;
 
 import java.time.Instant;
 import java.time.LocalTime;
@@ -49,6 +52,9 @@ public class Resource {
 
     @Column(length = 500)
     private String description;
+
+    @OneToOne(mappedBy = "resource", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private com.example.backend.entity.EquipmentMetadata equipmentMetadata;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -138,6 +144,22 @@ public class Resource {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public com.example.backend.entity.EquipmentMetadata getEquipmentMetadata() {
+        return equipmentMetadata;
+    }
+
+    public void setEquipmentMetadata(com.example.backend.entity.EquipmentMetadata equipmentMetadata) {
+        if (this.equipmentMetadata != null) {
+            this.equipmentMetadata.setResource(null);
+        }
+
+        this.equipmentMetadata = equipmentMetadata;
+
+        if (equipmentMetadata != null) {
+            equipmentMetadata.setResource(this);
+        }
     }
 
     public Instant getCreatedAt() {
