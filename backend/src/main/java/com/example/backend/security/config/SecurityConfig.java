@@ -53,6 +53,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/register/verify-otp", "/api/v1/auth/login")
                     .permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/resources", "/api/v1/resources/**").permitAll()
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                     .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/error").permitAll()

@@ -11,6 +11,7 @@ import {
 
 const navLinks = [
   { label: 'Home', href: '/' },
+  { label: 'Facilities', href: '/resources' },
   { label: 'Modules', href: '/#modules' },
   { label: 'Workflow', href: '/#workflow' },
   { label: 'Deliverables', href: '/#deliverables' },
@@ -374,6 +375,8 @@ export default function Header() {
                     <p className="truncate text-xs text-slate-500">{profileEmail}</p>
                   </div>
                 </div>
+
+
 
                 <button
                   type="button"
