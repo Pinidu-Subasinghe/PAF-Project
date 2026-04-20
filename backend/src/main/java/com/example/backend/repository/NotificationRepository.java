@@ -11,6 +11,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     List<Notification> findByUserIdAndIsReadFalseOrderByCreatedAtDesc(Long userId);
 
+    List<Notification> findTop3ByUserIdOrderByCreatedAtDesc(Long userId);
+
     Optional<Notification> findByIdAndUserId(Long id, Long userId);
 
     boolean existsByUserIdAndTypeAndIsReadFalse(Long userId, NotificationType type);
@@ -18,4 +20,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByUserIdAndTypeAndIsReadFalse(Long userId, NotificationType type);
 
     long deleteByUserId(Long userId);
+
+    long countByUserId(Long userId);
+
+    long deleteByCreatedAtBefore(java.time.Instant cutoff);
 }

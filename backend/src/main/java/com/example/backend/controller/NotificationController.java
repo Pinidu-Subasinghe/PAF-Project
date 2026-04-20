@@ -24,9 +24,11 @@ public class NotificationController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<List<NotificationResponse>> getMyNotifications(Authentication authentication) {
-        List<NotificationResponse> response = notificationService.listUnreadByUserEmail(requireEmail(authentication));
-        return ResponseEntity.ok(response);
+    public ResponseEntity<com.example.backend.dto.response.NotificationListResponse> getMyNotifications(Authentication authentication) {
+        String email = requireEmail(authentication);
+        List<NotificationResponse> list = notificationService.listUnreadByUserEmail(email);
+        int total = notificationService.countNotificationsByUserEmail(email);
+        return ResponseEntity.ok(new com.example.backend.dto.response.NotificationListResponse(list, total));
     }
 
     @PatchMapping("/{notificationId}/read")
