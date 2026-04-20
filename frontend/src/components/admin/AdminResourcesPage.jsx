@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { createResource, deleteResource, getResources, updateResource } from '../api/api'
-import { readAuthSession } from '../utils/authSession'
+import { createResource, deleteResource, getResources, updateResource } from '../../api/api'
+import { readAuthSession } from '../../utils/authSession'
 
 const initialFormState = {
   name: '',
