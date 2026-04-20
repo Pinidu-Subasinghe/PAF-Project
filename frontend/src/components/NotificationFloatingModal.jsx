@@ -47,16 +47,21 @@ export default function NotificationFloatingModal({
       {!isLoading && hasNotifications && (
         <div className="mt-3 max-h-[calc(100dvh-12rem)] space-y-2 overflow-y-auto pr-1 md:max-h-[60vh]">
           {notifications.map((notification) => (
-            <article key={notification.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <article
+              key={notification.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onNavigate(notification)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar' || e.key === 'Space') {
+                  e.preventDefault()
+                  onNavigate(notification)
+                }
+              }}
+              className="rounded-xl border border-slate-200 bg-slate-50 p-3 cursor-pointer hover:bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+            >
               <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
               <p className="mt-1 text-xs text-slate-600">{notification.message}</p>
-              <button
-                type="button"
-                className="mt-3 inline-flex items-center rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
-                onClick={() => onNavigate(notification)}
-              >
-                {readNotificationActionLabel(notification)}
-              </button>
             </article>
           ))}
         </div>
