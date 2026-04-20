@@ -2,7 +2,7 @@ export default function HeroSection() {
 	const highlights = [
 		'Unified operations for rooms, labs, equipment, and incidents in one hub.',
 		'Role-based workflow for USER, ADMIN, and optional TECHNICIAN access paths.',
-		'Strong auditability with status transitions, comments, and reason tracking.',
+		'Strong auditability with workflow status transitions, user/staff comments, and explicit reason tracking for actions.',
 	]
 
   return (
