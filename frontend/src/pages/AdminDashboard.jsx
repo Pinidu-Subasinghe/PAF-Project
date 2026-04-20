@@ -3,55 +3,7 @@ import DashboardShell from '../components/DashboardShell'
 import Profile from '../components/user/Profile'
 import ChangePassword from '../components/user/ChangePassword'
 import { authSessionChangeEvent, readAuthSession } from '../utils/authSession'
-
-const adminNavItems = [
-  {
-    id: 'overview',
-    label: 'Overview',
-    description: 'Campus operations',
-  },
-  {
-    id: 'profile',
-    label: 'Profile',
-    description: 'Your account details',
-  },
-  {
-    id: 'change-password',
-    label: 'Change password',
-    description: 'Update account security',
-  },
-  {
-    id: 'manage-resources',
-    label: 'Add Resources',
-    description: 'Add new campus facilities',
-  },
-]
-
-function OverviewPanel({ session }) {
-  const displayName = session?.fullName?.trim() || session?.email || 'Campus Admin'
-  const role = session?.role ?? 'ADMIN'
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900">Welcome back, {displayName}</h2>
-        <p className="mt-1 text-sm text-slate-500">Role: {role}</p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Active items</p>
-          <p className="mt-2 text-lg font-semibold text-slate-900">5 open tasks</p>
-          <p className="mt-1 text-xs text-slate-500">Approvals, alerts, and reports.</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">System status</p>
-          <p className="mt-2 text-lg font-semibold text-slate-900">All systems nominal</p>
-          <p className="mt-1 text-xs text-slate-500">No critical incidents.</p>
-        </div>
-      </div>
-    </div>
-  )
-}
+import { adminNavItems } from '../utils/dashboardNav'
 
 function PlaceholderPanel({ title, description, items }) {
   return (
@@ -127,6 +79,12 @@ export default function AdminDashboard() {
       return
     }
 
+    if (id === 'add-resources') {
+      window.history.pushState(null, '', '/admin/resources/add')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      return
+    }
+
     setActiveItemId(id)
   }
 
@@ -161,22 +119,32 @@ export default function AdminDashboard() {
   }, [navItems])
 
   const contentById = {
-    overview: <OverviewPanel session={session} />,
     profile: <Profile session={session} />,
     'change-password': <ChangePassword session={session} />,
-    'admin-tools': (
+    'add-resources': (
       <PlaceholderPanel
-        title="Admin tools"
-        description="Manage approvals, users, and system updates."
-        items={[
-          { title: 'Resource manager', detail: 'Open /admin/resources to manage the facilities catalogue.' },
-          { title: 'Facility alerts', detail: '2 new incidents' },
-        ]}
+        title="Add resources"
+        description="Create new facility records and assets."
+        items={[{ title: 'Add facility', detail: 'Open form to add a new facility.' }]}
+      />
+    ),
+    'manage-resources': (
+      <PlaceholderPanel
+        title="Manage resources"
+        description="Manage the facilities catalogue and inventory."
+        items={[{ title: 'Resource manager', detail: 'Open /admin/resources to manage the facilities catalogue.' }]}
+      />
+    ),
+    tickets: (
+      <PlaceholderPanel
+        title="Tickets"
+        description="View and manage support tickets across the system."
+        items={[{ title: 'Ticket #42', detail: 'Status: Open' }, { title: 'Ticket #77', detail: 'Status: Closed' }]}
       />
     ),
   }
 
-  const activeContent = contentById[activeItemId] ?? contentById.overview
+  const activeContent = contentById[activeItemId] ?? contentById.profile
 
   return (
     <DashboardShell
