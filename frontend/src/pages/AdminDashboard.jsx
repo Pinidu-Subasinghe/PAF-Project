@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import DashboardShell from '../components/DashboardShell'
 import Profile from '../components/user/Profile'
 import ChangePassword from '../components/user/ChangePassword'
+import AdminResourceManagement from '../components/admin/AdminResourceManagement'
 import { authSessionChangeEvent, readAuthSession } from '../utils/authSession'
 import { adminNavItems } from '../utils/dashboardNav'
 
@@ -73,12 +74,6 @@ export default function AdminDashboard() {
   const [activeItemId, setActiveItemId] = useState(() => readRequestedTab(navItems) ?? navItems[0].id)
 
   const handleSelect = (id) => {
-    if (id === 'manage-resources') {
-      window.history.pushState(null, '', '/admin/all-resources')
-      window.dispatchEvent(new PopStateEvent('popstate'))
-      return
-    }
-
     if (id === 'add-resources') {
       window.history.pushState(null, '', '/admin/resources')
       window.dispatchEvent(new PopStateEvent('popstate'))
@@ -128,13 +123,7 @@ export default function AdminDashboard() {
         items={[{ title: 'Add facility', detail: 'Open form to add a new facility.' }]}
       />
     ),
-    'manage-resources': (
-      <PlaceholderPanel
-        title="Manage resources"
-        description="Manage the facilities catalogue and inventory."
-        items={[{ title: 'Resource manager', detail: 'Open /admin/resources to manage the facilities catalogue.' }]}
-      />
-    ),
+    'manage-resources': <AdminResourceManagement />,
     tickets: (
       <PlaceholderPanel
         title="Tickets"

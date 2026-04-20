@@ -29,7 +29,7 @@ function resolveNotificationDestination(notification) {
   }
 
   if (target === 'manage-resources') {
-    return '/admin/all-resources'
+    return '/dashboard?tab=manage-resources'
   }
 
   return '/dashboard'
