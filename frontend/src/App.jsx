@@ -6,13 +6,16 @@ import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import UserDashboard from './pages/UserDashboard'
+import AdminDashboard from './pages/AdminDashboard'
 import ResourcesPage from './pages/ResourcesPage'
 import AdminResourcesPage from './pages/AdminResourcesPage'
 import AllResourcesPage from './pages/AllResourcesPage'
 import { consumeGoogleOAuthRedirect } from './utils/googleOAuth'
+import { readAuthSession, authSessionChangeEvent } from './utils/authSession'
 
 function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
+  const [session, setSession] = useState(() => readAuthSession())
 
   useEffect(() => {
     const handleLocationChange = () => {
@@ -40,6 +43,18 @@ function App() {
     if (oauthResult.status === 'error') {
       window.history.replaceState(null, '', '/login')
       setCurrentPath('/login')
+    }
+  }, [])
+
+  useEffect(() => {
+    const syncSession = () => setSession(readAuthSession())
+
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(authSessionChangeEvent, syncSession)
+
+    return () => {
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(authSessionChangeEvent, syncSession)
     }
   }, [])
 
@@ -74,7 +89,7 @@ function App() {
                 : isResourcesPage
                   ? <ResourcesPage />
               : isDashboardPage
-                ? <UserDashboard />
+                ? (session?.role === 'ADMIN' ? <AdminDashboard /> : <UserDashboard />)
                 : <HomePage />}
       </div>
       {showScrollToTop && <ScrollToTopButton />}

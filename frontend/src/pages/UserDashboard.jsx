@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import DashboardShell from '../components/user/DashboardShell'
+import DashboardShell from '../components/DashboardShell'
 import Profile from '../components/user/Profile'
 import ChangePassword from '../components/user/ChangePassword'
 import { authSessionChangeEvent, readAuthSession } from '../utils/authSession'
@@ -47,11 +47,6 @@ const adminNavItems = [
 		id: 'change-password',
 		label: 'Change password',
 		description: 'Update account security',
-	},
-	{
-		id: 'admin-tools',
-		label: 'Admin tools',
-		description: 'Users and approvals',
 	},
 ]
 
@@ -218,6 +213,7 @@ export default function UserDashboard() {
 	}
 
 	const activeContent = contentById[activeItemId] ?? contentById.overview
+
 
 	return (
 		<DashboardShell
