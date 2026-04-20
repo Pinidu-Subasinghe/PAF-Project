@@ -37,7 +37,11 @@ export default function Footer() {
                   Institute
                 </h3>
                 <ul className="mt-4 space-y-2 text-sm text-slate-500">
-                  <li className="hover:text-slate-700 cursor-pointer">About Us</li>
+                  <li>
+                    <a className="hover:text-slate-700" href="/about-us">
+                      About Us
+                    </a>
+                  </li>
                   <li className="hover:text-slate-700 cursor-pointer">Careers</li>
                   <li className="hover:text-slate-700 cursor-pointer">Contact</li>
                   <li className="hover:text-slate-700 cursor-pointer">Support</li>
