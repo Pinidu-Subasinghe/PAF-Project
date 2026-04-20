@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { HiOutlineBell, HiOutlineUserCircle } from 'react-icons/hi2'
 import NotificationFloatingModal from './NotificationFloatingModal'
 import { getMyNotifications, markNotificationAsRead } from '../api/api'
@@ -28,6 +28,10 @@ function resolveNotificationDestination(notification) {
     return '/dashboard?tab=change-password'
   }
 
+  if (target === 'manage-resources') {
+    return '/admin/all-resources'
+  }
+
   return '/dashboard'
 }
 
@@ -42,6 +46,7 @@ export default function Header() {
   const [authSession, setAuthSession] = useState(() => readAuthSession())
   const profileMenuRef = useRef(null)
   const notificationMenuRef = useRef(null)
+  const notificationsFetchIdRef = useRef(0)
 
   const isAuthenticated = Boolean(authSession)
   const profileName = authSession?.fullName?.trim() || authSession?.email || 'Campus User'
@@ -86,7 +91,7 @@ export default function Header() {
     }
   }, [])
 
-  useEffect(() => {
+  const loadNotifications = useCallback(async () => {
     if (!authSession?.token) {
       setNotifications([])
       setIsNotificationsLoading(false)
@@ -95,43 +100,39 @@ export default function Header() {
       return
     }
 
-    let isCurrent = true
+    const currentId = ++notificationsFetchIdRef.current
+    setIsNotificationsLoading(true)
+    setNotificationsError('')
 
-    const loadNotifications = async () => {
-      setIsNotificationsLoading(true)
-      setNotificationsError('')
-
-      try {
-        const response = await getMyNotifications()
-        if (!isCurrent) {
-          return
-        }
-
-        setNotifications(Array.isArray(response) ? response : [])
-      } catch (error) {
-        if (!isCurrent) {
-          return
-        }
-
-        setNotifications([])
-        setNotificationsError(
-          error instanceof Error
-            ? error.message
-            : 'Unable to load notifications right now.',
-        )
-      } finally {
-        if (isCurrent) {
-          setIsNotificationsLoading(false)
-        }
+    try {
+      const response = await getMyNotifications()
+      if (notificationsFetchIdRef.current !== currentId) return
+      setNotifications(Array.isArray(response) ? response : [])
+    } catch (error) {
+      if (notificationsFetchIdRef.current !== currentId) return
+      setNotifications([])
+      setNotificationsError(
+        error instanceof Error ? error.message : 'Unable to load notifications right now.',
+      )
+    } finally {
+      if (notificationsFetchIdRef.current === currentId) {
+        setIsNotificationsLoading(false)
       }
     }
+  }, [authSession?.token])
 
+  useEffect(() => {
     loadNotifications()
-
     return () => {
-      isCurrent = false
+      notificationsFetchIdRef.current++
     }
-  }, [authSession?.token, authSession?.passwordSetupRequired])
+  }, [authSession?.token, authSession?.passwordSetupRequired, loadNotifications])
+
+  useEffect(() => {
+    const handler = () => loadNotifications()
+    window.addEventListener('unipilot-notification-refresh', handler)
+    return () => window.removeEventListener('unipilot-notification-refresh', handler)
+  }, [loadNotifications])
 
   useEffect(() => {
     const handleOutsideClick = (event) => {

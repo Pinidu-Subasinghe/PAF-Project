@@ -6,6 +6,10 @@ import com.example.backend.enums.ResourceStatus;
 import com.example.backend.enums.ResourceType;
 import com.example.backend.enums.EquipmentCategory;
 import com.example.backend.service.ResourceService;
+import com.example.backend.service.NotificationService;
+import org.springframework.security.core.Authentication;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,9 +31,12 @@ import java.util.List;
 public class ResourceController {
 
     private final ResourceService resourceService;
+    private final NotificationService notificationService;
+    private static final Logger log = LoggerFactory.getLogger(ResourceController.class);
 
-    public ResourceController(ResourceService resourceService) {
+    public ResourceController(ResourceService resourceService, NotificationService notificationService) {
         this.resourceService = resourceService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping
@@ -50,8 +57,19 @@ public class ResourceController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ResourceResponse> createResource(@Valid @RequestBody ResourceUpsertRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(resourceService.createResource(request));
+    public ResponseEntity<ResourceResponse> createResource(@Valid @RequestBody ResourceUpsertRequest request, Authentication authentication) {
+        ResourceResponse saved = resourceService.createResource(request);
+
+        try {
+            if (authentication != null && authentication.getName() != null) {
+                log.info("Resource created (id={}), attempting to create notification for user {}", saved.id(), authentication.getName());
+                notificationService.createResourceAddedNotification(authentication.getName(), saved.name());
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to create resource-added notification: {}", ex.getMessage());
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PutMapping("/{resourceId}")

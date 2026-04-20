@@ -74,13 +74,13 @@ export default function AdminDashboard() {
 
   const handleSelect = (id) => {
     if (id === 'manage-resources') {
-      window.history.pushState(null, '', '/admin/resources')
+      window.history.pushState(null, '', '/admin/all-resources')
       window.dispatchEvent(new PopStateEvent('popstate'))
       return
     }
 
     if (id === 'add-resources') {
-      window.history.pushState(null, '', '/admin/resources/add')
+      window.history.pushState(null, '', '/admin/resources')
       window.dispatchEvent(new PopStateEvent('popstate'))
       return
     }

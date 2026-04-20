@@ -76,6 +76,12 @@ export default function AdminResourcesPage() {
     try {
       await createResource(payload)
       setPageMessage('Resource created successfully.')
+      // Inform other UI parts (header) to reload notifications
+      try {
+        window.dispatchEvent(new Event('unipilot-notification-refresh'))
+      } catch (e) {
+        // ignore
+      }
       resetForm()
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to save the resource.')

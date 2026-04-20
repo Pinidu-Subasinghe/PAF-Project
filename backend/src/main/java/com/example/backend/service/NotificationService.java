@@ -7,6 +7,8 @@ import com.example.backend.enums.NotificationType;
 import com.example.backend.exception.NotificationNotFoundException;
 import com.example.backend.exception.UserNotFoundException;
 import com.example.backend.repository.NotificationRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.example.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,9 +20,13 @@ import java.util.Locale;
 @Service
 public class NotificationService {
 
+    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
+
     private static final String PASSWORD_SETUP_TITLE = "Set your account password";
     private static final String PASSWORD_SETUP_MESSAGE = "You signed up with Google. Set a password to enable email login.";
     private static final String PASSWORD_SETUP_ACTION_TARGET = "change-password";
+    private static final String RESOURCE_ADDED_TITLE = "Resource added successfully";
+    private static final String RESOURCE_ADDED_ACTION_TARGET = "manage-resources";
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -100,6 +106,26 @@ public class NotificationService {
     @Transactional
     public void deleteAllByUserId(Long userId) {
         notificationRepository.deleteByUserId(userId);
+    }
+
+    @Transactional
+    public void createResourceAddedNotification(String email, String resourceName) {
+        AppUser user = findByEmail(email);
+        if (user == null || user.getId() == null) {
+            return;
+        }
+
+        Notification notification = new Notification();
+        notification.setUser(user);
+        notification.setType(NotificationType.RESOURCE_ADDED);
+        notification.setTitle(RESOURCE_ADDED_TITLE);
+
+        String namePart = (resourceName == null || resourceName.isBlank()) ? "" : "'" + resourceName + "' ";
+        notification.setMessage("Resource " + namePart + "added successfully.");
+        notification.setActionTarget(RESOURCE_ADDED_ACTION_TARGET);
+
+        Notification saved = notificationRepository.save(notification);
+        log.info("Created RESOURCE_ADDED notification (id={}) for user {} about resource {}", saved.getId(), user.getEmail(), resourceName);
     }
 
     private AppUser findByEmail(String email) {
