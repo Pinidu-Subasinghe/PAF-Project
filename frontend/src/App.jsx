@@ -10,6 +10,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import ResourcesPage from './pages/ResourcesPage'
 import AdminResourcesPage from './components/admin/AdminResourcesPage'
 import AllResourcesPage from './pages/AllResourcesPage'
+import ResourceDetailsCard from './components/ResourceDetailsCard'
 import { consumeGoogleOAuthRedirect } from './utils/googleOAuth'
 import { readAuthSession, authSessionChangeEvent } from './utils/authSession'
 
@@ -61,7 +62,8 @@ function App() {
   const isLoginPage = currentPath.startsWith('/login') || currentPath.startsWith('/auth')
   const isSignUpPage = currentPath.startsWith('/signup') || currentPath.startsWith('/register')
   const isDashboardPage = currentPath.startsWith('/dashboard') || currentPath.startsWith('/user')
-  const isResourcesPage = currentPath.startsWith('/resources')
+  const isResourceDetailsPage = currentPath.startsWith('/resources/') && currentPath.length > '/resources/'.length
+  const isResourcesPage = currentPath.startsWith('/resources') && !isResourceDetailsPage
   const isAdminResourcesPage = currentPath.startsWith('/admin/resources')
   const isAllResourcesPage = currentPath.startsWith('/admin/all-resources')
 
@@ -86,6 +88,8 @@ function App() {
               ? <AdminResourcesPage />
               : isAllResourcesPage
                 ? <AllResourcesPage />
+                : isResourceDetailsPage
+                  ? <ResourceDetailsCard />
                 : isResourcesPage
                   ? <ResourcesPage />
               : isDashboardPage

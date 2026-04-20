@@ -13,8 +13,16 @@ function formatEnumLabel(value) {
 function ResourceCard({ resource }) {
   const isActive = resource.status === 'ACTIVE'
 
+  const handleCardClick = () => {
+    window.history.pushState(null, '', `/resources/${resource.id}`)
+    window.dispatchEvent(new Event('popstate'))
+  }
+
   return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+    <article 
+      onClick={handleCardClick}
+      className="cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md hover:border-teal-200 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5"
+    >
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
