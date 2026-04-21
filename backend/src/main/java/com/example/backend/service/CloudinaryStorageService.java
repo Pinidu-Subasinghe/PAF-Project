@@ -101,4 +101,14 @@ public class CloudinaryStorageService {
     private String asString(Object value) {
         return value == null ? null : value.toString();
     }
+
+    public void deleteByPublicId(String publicId) {
+        if (isBlank(publicId)) return;
+
+        try {
+            cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("invalidate", true));
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to delete image", ex);
+        }
+    }
 }

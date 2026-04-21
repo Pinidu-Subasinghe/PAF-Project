@@ -15,9 +15,12 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.OneToMany;
 
 import java.time.Instant;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "resources")
@@ -55,6 +58,9 @@ public class Resource {
 
     @OneToOne(mappedBy = "resource", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private com.example.backend.entity.EquipmentMetadata equipmentMetadata;
+
+    @OneToMany(mappedBy = "resource", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<com.example.backend.entity.ResourceImage> images = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -160,6 +166,29 @@ public class Resource {
         if (equipmentMetadata != null) {
             equipmentMetadata.setResource(this);
         }
+    }
+
+    public List<com.example.backend.entity.ResourceImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<com.example.backend.entity.ResourceImage> images) {
+        this.images.clear();
+        if (images != null) {
+            images.forEach(this::addImage);
+        }
+    }
+
+    public void addImage(com.example.backend.entity.ResourceImage image) {
+        if (image == null) return;
+        this.images.add(image);
+        image.setResource(this);
+    }
+
+    public void removeImage(com.example.backend.entity.ResourceImage image) {
+        if (image == null) return;
+        this.images.remove(image);
+        image.setResource(null);
     }
 
     public Instant getCreatedAt() {
