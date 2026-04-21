@@ -107,20 +107,61 @@ export async function getResourceById(resourceId) {
   return request(`/api/v1/resources/${resourceId}`)
 }
 
-export async function createResource(resourcePayload) {
-  return request('/api/v1/resources', {
-    method: 'POST',
-    body: resourcePayload,
-    headers: getAuthHeader(),
-  })
+function buildResourceFormData(resourcePayload, { coverImage, images } = {}) {
+  const formData = new FormData()
+  const dataBlob = new Blob([JSON.stringify(resourcePayload)], { type: 'application/json' })
+  formData.append('data', dataBlob)
+
+  if (coverImage) {
+    formData.append('coverImage', coverImage)
+  }
+
+  if (Array.isArray(images)) {
+    images.filter(Boolean).forEach((image) => formData.append('images', image))
+  }
+
+  return formData
 }
 
-export async function updateResource(resourceId, resourcePayload) {
-  return request(`/api/v1/resources/${resourceId}`, {
-    method: 'PUT',
-    body: resourcePayload,
-    headers: getAuthHeader(),
+export async function createResource(resourcePayload, options) {
+  // send as multipart/form-data (server expects `data` JSON part)
+  const formData = buildResourceFormData(resourcePayload, options)
+
+  const headers = getAuthHeader()
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/resources`, {
+    method: 'POST',
+    headers,
+    body: formData,
   })
+
+  const payload = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    throw new Error(readErrorMessage(payload, 'Request failed. Please try again.'))
+  }
+
+  return payload
+}
+
+export async function updateResource(resourceId, resourcePayload, options) {
+  const formData = buildResourceFormData(resourcePayload, options)
+
+  const headers = getAuthHeader()
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/resources/${resourceId}`, {
+    method: 'PUT',
+    headers,
+    body: formData,
+  })
+
+  const payload = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    throw new Error(readErrorMessage(payload, 'Request failed. Please try again.'))
+  }
+
+  return payload
 }
 
 export async function deleteResource(resourceId) {

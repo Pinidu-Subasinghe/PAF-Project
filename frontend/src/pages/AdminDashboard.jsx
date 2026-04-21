@@ -3,6 +3,7 @@ import DashboardShell from '../components/DashboardShell'
 import Profile from '../components/user/Profile'
 import ChangePassword from '../components/user/ChangePassword'
 import AdminResourceManagement from '../components/admin/AdminResourceManagement'
+import AdminAddResource from '../components/admin/AdminAddResource'
 import { authSessionChangeEvent, readAuthSession } from '../utils/authSession'
 import { adminNavItems } from '../utils/dashboardNav'
 
@@ -74,12 +75,6 @@ export default function AdminDashboard() {
   const [activeItemId, setActiveItemId] = useState(() => readRequestedTab(navItems) ?? navItems[0].id)
 
   const handleSelect = (id) => {
-    if (id === 'add-resources') {
-      window.history.pushState(null, '', '/admin/resources')
-      window.dispatchEvent(new PopStateEvent('popstate'))
-      return
-    }
-
     setActiveItemId(id)
   }
 
@@ -116,13 +111,7 @@ export default function AdminDashboard() {
   const contentById = {
     profile: <Profile session={session} />,
     'change-password': <ChangePassword session={session} />,
-    'add-resources': (
-      <PlaceholderPanel
-        title="Add resources"
-        description="Create new facility records and assets."
-        items={[{ title: 'Add facility', detail: 'Open form to add a new facility.' }]}
-      />
-    ),
+    'add-resources': <AdminAddResource />,
     'manage-resources': <AdminResourceManagement />,
     tickets: (
       <PlaceholderPanel
