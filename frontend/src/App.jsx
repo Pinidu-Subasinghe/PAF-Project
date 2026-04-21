@@ -10,6 +10,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import ResourcesPage from './pages/ResourcesPage'
 import ResourceDetailsCard from './components/ResourceDetailsCard'
 import AboutUs from './components/AboutUs'
+import BookingCreatePage from './pages/BookingCreatePage'
 import { consumeGoogleOAuthRedirect } from './utils/googleOAuth'
 import { readAuthSession, authSessionChangeEvent } from './utils/authSession'
 
@@ -58,6 +59,35 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (currentPath.startsWith('/bookings/my')) {
+      if (!session) {
+        window.history.replaceState(null, '', '/login')
+        setCurrentPath('/login')
+        return
+      }
+
+      const destination = session.role === 'ADMIN'
+        ? '/admin-dashboard?tab=manage-bookings'
+        : '/user-dashboard?tab=my-bookings'
+
+      window.history.replaceState(null, '', destination)
+      setCurrentPath(window.location.pathname)
+      return
+    }
+
+    if (currentPath.startsWith('/bookings/all')) {
+      if (session?.role === 'ADMIN') {
+        const destination = '/admin-dashboard?tab=manage-bookings'
+        window.history.replaceState(null, '', destination)
+        setCurrentPath('/admin-dashboard')
+      } else {
+        window.history.replaceState(null, '', '/login')
+        setCurrentPath('/login')
+      }
+    }
+  }, [currentPath, session])
+
   const isLoginPage = currentPath.startsWith('/login') || currentPath.startsWith('/auth')
   const isSignUpPage = currentPath.startsWith('/signup') || currentPath.startsWith('/register')
   const isAdminDashboardPage = currentPath.startsWith('/admin-dashboard')
@@ -66,7 +96,9 @@ function App() {
   const isAboutUsPage = currentPath.startsWith('/about-us')
   const isResourceDetailsPage = currentPath.startsWith('/resources/') && currentPath.length > '/resources/'.length
   const isResourcesPage = currentPath.startsWith('/resources') && !isResourceDetailsPage
-  const isAllResourcesPage = currentPath.startsWith('/admin/all-resources')
+  const isBookingCreatePage = /^\/bookings\/create\/\d+$/.test(currentPath)
+  const isMyBookingsPage = currentPath.startsWith('/bookings/my')
+  const isAllBookingsPage = currentPath.startsWith('/bookings/all')
 
   const isAuthPage = isLoginPage || isSignUpPage
   const showChrome = !isAuthPage
@@ -85,9 +117,13 @@ function App() {
           ? <SignUpPage />
           : isLoginPage
             ? <LoginPage />
-            : isAllResourcesPage
-                ? <AllResourcesPage />
-                : isResourceDetailsPage
+            : isBookingCreatePage
+              ? <BookingCreatePage />
+            : isMyBookingsPage
+              ? (session ? (session.role === 'ADMIN' ? <AdminDashboard /> : <UserDashboard />) : <LoginPage />)
+            : isAllBookingsPage
+              ? (session?.role === 'ADMIN' ? <AdminDashboard /> : <LoginPage />)
+            : isResourceDetailsPage
                   ? <ResourceDetailsCard />
                 : isResourcesPage
                   ? <ResourcesPage />

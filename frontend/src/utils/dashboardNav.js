@@ -13,5 +13,6 @@ export const adminNavItems = [
   ...commonNavItems,
   { id: 'add-resources', label: 'Add resources', description: 'Add new campus facilities' },
   { id: 'manage-resources', label: 'Manage resources', description: 'Manage the facilities catalogue' },
+  { id: 'manage-bookings', label: 'Manage bookings', description: 'Review and manage all reservations' },
   { id: 'tickets', label: 'Tickets', description: 'Manage support tickets' },
 ]

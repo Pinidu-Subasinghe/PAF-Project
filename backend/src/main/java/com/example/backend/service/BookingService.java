@@ -1,0 +1,186 @@
+package com.example.backend.service;
+
+import com.example.backend.dto.request.BookingCreateRequest;
+import com.example.backend.dto.request.BookingRejectRequest;
+import com.example.backend.dto.response.BookingResponse;
+import com.example.backend.entity.AppUser;
+import com.example.backend.entity.Booking;
+import com.example.backend.enums.BookingStatus;
+import com.example.backend.exception.BookingNotFoundException;
+import com.example.backend.exception.ResourceNotFoundException;
+import com.example.backend.exception.UserNotFoundException;
+import com.example.backend.repository.BookingRepository;
+import com.example.backend.repository.ResourceRepository;
+import com.example.backend.repository.UserRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+public class BookingService {
+
+    private final BookingRepository bookingRepository;
+    private final UserRepository userRepository;
+    private final ResourceRepository resourceRepository;
+
+    public BookingService(
+            BookingRepository bookingRepository,
+            UserRepository userRepository,
+            ResourceRepository resourceRepository
+    ) {
+        this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
+        this.resourceRepository = resourceRepository;
+    }
+
+    @Transactional
+    public BookingResponse createBooking(String userEmail, BookingCreateRequest request) {
+        validateCreateRequest(request);
+        AppUser user = findUserByEmail(userEmail);
+
+        if (!resourceRepository.existsById(request.resourceId())) {
+            throw new ResourceNotFoundException("Resource not found");
+        }
+
+        Booking booking = new Booking();
+        booking.setResourceId(request.resourceId());
+        booking.setUserId(user.getId());
+        booking.setDate(request.date());
+        booking.setStartTime(request.startTime());
+        booking.setEndTime(request.endTime());
+        booking.setPurpose(request.purpose().trim());
+        booking.setAttendees(request.attendees());
+        booking.setStatus(BookingStatus.PENDING);
+
+        return toResponse(bookingRepository.save(booking));
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getMyBookings(String userEmail) {
+        AppUser user = findUserByEmail(userEmail);
+        return bookingRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getAllBookings(BookingStatus status) {
+        List<Booking> bookings = status == null
+                ? bookingRepository.findAllByOrderByCreatedAtDesc()
+                : bookingRepository.findByStatusOrderByCreatedAtDesc(status);
+
+        return bookings.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional
+    public BookingResponse approveBooking(Long bookingId) {
+        Booking booking = findBooking(bookingId);
+        ensurePendingForDecision(booking, "approve");
+
+        booking.setStatus(BookingStatus.APPROVED);
+        booking.setRejectionReason(null);
+        return toResponse(bookingRepository.save(booking));
+    }
+
+    @Transactional
+    public BookingResponse rejectBooking(Long bookingId, BookingRejectRequest request) {
+        Booking booking = findBooking(bookingId);
+        ensurePendingForDecision(booking, "reject");
+
+        booking.setStatus(BookingStatus.REJECTED);
+        booking.setRejectionReason(request.reason().trim());
+        return toResponse(bookingRepository.save(booking));
+    }
+
+    @Transactional
+    public BookingResponse cancelBooking(Long bookingId) {
+        Booking booking = findBooking(bookingId);
+
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new IllegalArgumentException("Booking is already cancelled");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        return toResponse(bookingRepository.save(booking));
+    }
+
+    private AppUser findUserByEmail(String userEmail) {
+        return userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+    }
+
+    private Booking findBooking(Long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
+    }
+
+    private void validateTimeWindow(java.time.LocalTime startTime, java.time.LocalTime endTime) {
+        if (!endTime.isAfter(startTime)) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+    }
+
+    private void validateCreateRequest(BookingCreateRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Request payload is required");
+        }
+
+        if (request.resourceId() == null || request.resourceId() < 1) {
+            throw new IllegalArgumentException("Resource ID must be greater than 0");
+        }
+
+        if (request.date() == null) {
+            throw new IllegalArgumentException("Date is required");
+        }
+
+        if (request.startTime() == null) {
+            throw new IllegalArgumentException("Start time is required");
+        }
+
+        if (request.endTime() == null) {
+            throw new IllegalArgumentException("End time is required");
+        }
+
+        if (request.purpose() == null || request.purpose().isBlank()) {
+            throw new IllegalArgumentException("Purpose is required");
+        }
+
+        if (request.purpose().trim().length() > 500) {
+            throw new IllegalArgumentException("Purpose must be at most 500 characters");
+        }
+
+        if (request.attendees() == null) {
+            throw new IllegalArgumentException("Expected attendees is required");
+        }
+
+        if (request.attendees() < 1) {
+            throw new IllegalArgumentException("Expected attendees must be at least 1");
+        }
+
+        validateTimeWindow(request.startTime(), request.endTime());
+    }
+
+    private void ensurePendingForDecision(Booking booking, String actionName) {
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalArgumentException("Only pending bookings can be " + actionName);
+        }
+    }
+
+    private BookingResponse toResponse(Booking booking) {
+        return new BookingResponse(
+                booking.getId(),
+                booking.getResourceId(),
+                booking.getUserId(),
+                booking.getDate(),
+                booking.getStartTime(),
+                booking.getEndTime(),
+                booking.getPurpose(),
+                booking.getAttendees(),
+                booking.getStatus().name(),
+                booking.getRejectionReason(),
+                booking.getCreatedAt()
+        );
+    }
+}

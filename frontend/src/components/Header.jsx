@@ -52,6 +52,7 @@ export default function Header() {
   const notificationsFetchIdRef = useRef(0)
 
   const isAuthenticated = Boolean(authSession)
+  const resolvedNavLinks = navLinks
   const profileName = authSession?.fullName?.trim() || authSession?.email || 'Campus User'
   const profileEmail = authSession?.email || 'Logged in'
   const unreadNotificationCount = notifications.filter((n) => !n.read).length
@@ -257,7 +258,7 @@ export default function Header() {
 
           <div className="hidden items-center gap-3 md:flex">
             <nav className="flex items-center gap-4 text-sm font-medium text-slate-600">
-              {navLinks.map((link) => (
+              {resolvedNavLinks.map((link) => (
                 <a
                   key={link.label}
                   className="px-1 py-1.5 transition-colors hover:text-slate-900"
@@ -367,7 +368,7 @@ export default function Header() {
         >
           <div className="rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg shadow-slate-900/5">
             <nav className="grid gap-1">
-              {navLinks.map((link) => (
+              {resolvedNavLinks.map((link) => (
                 <a
                   key={link.label}
                   className="rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
