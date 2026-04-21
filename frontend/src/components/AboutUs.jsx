@@ -4,7 +4,6 @@ import {
   ShieldCheck,
   Zap,
   UserCircle,
-  UserRound,
 } from "lucide-react";
 
 export default function AboutUs() {
@@ -12,7 +11,7 @@ export default function AboutUs() {
     <div className="bg-slate-50 text-slate-900">
       <section className="mx-auto max-w-7xl px-6 py-16 text-center">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          About Smart Campus Hub
+          About UniPilot
         </h1>
         <p className="mt-4 mx-auto max-w-2xl text-slate-500">
           A unified platform designed to simplify campus operations — from facility bookings to maintenance workflows — all in one place.
@@ -82,7 +81,7 @@ export default function AboutUs() {
             {
               name: 'Bhagya Navodyani',
               role: 'Backend Developer',
-              Icon: UserRound,
+              Icon: UserCircle,
             },
             {
               name: 'Kavishka Malshan',
