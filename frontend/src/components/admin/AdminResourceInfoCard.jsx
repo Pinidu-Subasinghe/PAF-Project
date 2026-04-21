@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { deleteResource, getResourceById, updateResource } from '../../api/api'
+import { toast } from 'react-toastify'
 
 const typeOptions = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
 const statusOptions = ['ACTIVE', 'OUT_OF_SERVICE']
@@ -121,6 +122,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
         keepImagePublicIds,
       })
       setPageMessage('Resource updated successfully.')
+      toast.success('Resource updated successfully.')
       await loadResource()
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to update the resource.')
