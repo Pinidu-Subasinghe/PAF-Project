@@ -23,17 +23,18 @@ function navigateTo(pathname) {
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
-function resolveNotificationDestination(notification) {
+function resolveNotificationDestination(notification, authSession) {
   const target = notification?.actionTarget?.trim()
+
   if (target === 'change-password') {
-    return '/dashboard?tab=change-password'
+    return authSession?.role === 'ADMIN' ? '/admin-dashboard?tab=change-password' : '/user-dashboard?tab=change-password'
   }
 
   if (target === 'manage-resources') {
-    return '/dashboard?tab=manage-resources'
+    return '/admin-dashboard?tab=manage-resources'
   }
 
-  return '/dashboard'
+  return authSession?.role === 'ADMIN' ? '/admin-dashboard' : '/user-dashboard'
 }
 
 export default function Header() {
@@ -187,7 +188,7 @@ export default function Header() {
   }
 
   const handleNotificationNavigate = async (notification) => {
-    const destination = resolveNotificationDestination(notification)
+    const destination = resolveNotificationDestination(notification, authSession)
 
     if (notification?.id) {
       try {
@@ -288,7 +289,7 @@ export default function Header() {
                     <div className="absolute right-0 top-12 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl shadow-slate-900/10">
                       <div className="rounded-xl bg-slate-50 p-3">
                         <a
-                          href="/dashboard"
+                          href={authSession ? (authSession.role === 'ADMIN' ? '/admin-dashboard' : '/user-dashboard') : '/login'}
                           className="truncate text-sm font-semibold text-slate-900 hover:underline"
                         >
                           {profileName}
@@ -386,7 +387,7 @@ export default function Header() {
                   <HiOutlineUserCircle className="h-7 w-7 text-slate-700" />
                   <div className="min-w-0">
                     <a
-                      href="/dashboard"
+                      href={authSession ? (authSession.role === 'ADMIN' ? '/admin-dashboard' : '/user-dashboard') : '/login'}
                       className="truncate text-sm font-semibold text-slate-900 hover:underline"
                       onClick={closeMobileMenu}
                     >

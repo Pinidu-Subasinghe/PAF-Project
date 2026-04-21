@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createResource } from '../../api/api'
+import { toast } from 'react-toastify'
 
 const initialFormState = {
   name: '',
@@ -37,7 +38,7 @@ export default function AdminAddResource({ onCreated } = {}) {
   const [coverImage, setCoverImage] = useState(null)
   const [extraImages, setExtraImages] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [pageMessage, setPageMessage] = useState('')
+  
   const [errorMessage, setErrorMessage] = useState('')
 
   const resetForm = () => {
@@ -59,7 +60,6 @@ export default function AdminAddResource({ onCreated } = {}) {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setIsSubmitting(true)
-    setPageMessage('')
     setErrorMessage('')
 
     const payload = {
@@ -86,12 +86,7 @@ export default function AdminAddResource({ onCreated } = {}) {
         coverImage,
         images: extraImages,
       })
-      setPageMessage('Resource created successfully.')
-      try {
-        window.dispatchEvent(new Event('unipilot-notification-refresh'))
-      } catch (e) {
-        // ignore
-      }
+      toast.success('Resource created successfully.')
       resetForm()
       if (typeof onCreated === 'function') onCreated()
     } catch (error) {
@@ -108,11 +103,7 @@ export default function AdminAddResource({ onCreated } = {}) {
         <p className="mt-1 text-sm text-slate-500">Create a new facility or equipment entry.</p>
       </div>
 
-      {pageMessage && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-          {pageMessage}
-        </div>
-      )}
+      
 
       {errorMessage && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
