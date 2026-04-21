@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { deleteResource, getResourceById, updateResource } from '../../api/api'
+import { toast } from 'react-toastify'
+import Swal from 'sweetalert2'
+import 'sweetalert2/dist/sweetalert2.min.css'
 
 const typeOptions = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
 const statusOptions = ['ACTIVE', 'OUT_OF_SERVICE']
@@ -121,6 +124,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
         keepImagePublicIds,
       })
       setPageMessage('Resource updated successfully.')
+      toast.success('Resource updated successfully.')
       await loadResource()
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to update the resource.')
@@ -131,8 +135,18 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
 
   const handleDelete = async () => {
     if (!resourceId) return
-    const confirmed = window.confirm('Delete this resource? This cannot be undone.')
-    if (!confirmed) return
+
+    const result = await Swal.fire({
+      title: 'Delete this resource?',
+      text: 'This cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    })
+
+    if (!result.isConfirmed) return
 
     setIsSubmitting(true)
     setErrorMessage('')
@@ -140,6 +154,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
 
     try {
       await deleteResource(resourceId)
+      toast.success('Resource deleted successfully.')
       if (typeof onDeleted === 'function') onDeleted()
       if (typeof onBack === 'function') onBack()
     } catch (error) {

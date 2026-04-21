@@ -60,7 +60,9 @@ function App() {
 
   const isLoginPage = currentPath.startsWith('/login') || currentPath.startsWith('/auth')
   const isSignUpPage = currentPath.startsWith('/signup') || currentPath.startsWith('/register')
-  const isDashboardPage = currentPath.startsWith('/dashboard') || currentPath.startsWith('/user')
+  const isAdminDashboardPage = currentPath.startsWith('/admin-dashboard')
+  const isUserDashboardPage = currentPath.startsWith('/user-dashboard')
+  const isDashboardPage = isAdminDashboardPage || isUserDashboardPage
   const isAboutUsPage = currentPath.startsWith('/about-us')
   const isResourceDetailsPage = currentPath.startsWith('/resources/') && currentPath.length > '/resources/'.length
   const isResourcesPage = currentPath.startsWith('/resources') && !isResourceDetailsPage
@@ -92,7 +94,25 @@ function App() {
               : isAboutUsPage
                 ? <AboutUs />
               : isDashboardPage
-                ? (session?.role === 'ADMIN' ? <AdminDashboard /> : <UserDashboard />)
+                ? (
+                    isAdminDashboardPage
+                      ? (
+                          session
+                            ? (session.role === 'ADMIN' ? <AdminDashboard /> : (
+                                <main className="min-h-screen bg-slate-50">
+                                  <div className="mx-auto w-full max-w-2xl px-4 py-16 text-center">
+                                    <h1 className="text-2xl font-semibold text-slate-900">Access denied</h1>
+                                    <p className="mt-2 text-sm text-slate-500">You do not have permission to view the admin dashboard.</p>
+                                  </div>
+                                </main>
+                              ))
+                            : <LoginPage />
+                        )
+                      : (
+                          // user dashboard
+                          session ? <UserDashboard /> : <LoginPage />
+                        )
+                  )
                 : <HomePage />}
       </div>
       {showScrollToTop && <ScrollToTopButton />}
