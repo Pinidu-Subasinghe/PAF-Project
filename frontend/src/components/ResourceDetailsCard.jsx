@@ -13,6 +13,7 @@ export default function ResourceDetailsCard() {
   const [resource, setResource] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
 
   useEffect(() => {
     // Extract ID from pathname (e.g., "/resources/123")
@@ -35,6 +36,7 @@ export default function ResourceDetailsCard() {
         const response = await getResourceById(resourceId)
         if (isCurrent) {
           setResource(response)
+          setActiveImageIndex(0)
         }
       } catch (error) {
         if (isCurrent) {
@@ -86,6 +88,17 @@ export default function ResourceDetailsCard() {
   }
 
   const isActive = resource.status === 'ACTIVE'
+  const images = Array.isArray(resource.images)
+    ? resource.images.filter((image) => image && image.url)
+    : []
+
+  const handlePrevImage = () => {
+    setActiveImageIndex((current) => (current - 1 + images.length) % images.length)
+  }
+
+  const handleNextImage = () => {
+    setActiveImageIndex((current) => (current + 1) % images.length)
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
@@ -112,6 +125,43 @@ export default function ResourceDetailsCard() {
             {formatEnumLabel(resource.status)}
           </span>
         </div>
+
+        {images.length > 0 && (
+          <div className="mt-8 border-b border-slate-100 pb-8">
+            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+              <img
+                src={images[activeImageIndex].url}
+                alt={`${resource.name} image ${activeImageIndex + 1}`}
+                className="h-80 w-full object-cover sm:h-96"
+              />
+              {images.length > 1 && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-4">
+                  <button
+                    type="button"
+                    onClick={handlePrevImage}
+                    className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm transition hover:bg-white"
+                    aria-label="Previous image"
+                  >
+                    &lt;
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextImage}
+                    className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm transition hover:bg-white"
+                    aria-label="Next image"
+                  >
+                    &gt;
+                  </button>
+                </div>
+              )}
+            </div>
+            {images.length > 1 && (
+              <div className="mt-3 text-center text-xs font-medium text-slate-500">
+                {activeImageIndex + 1} / {images.length}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="py-8 grid gap-8 md:grid-cols-2 lg:grid-cols-3 border-b border-slate-100">
           <div>

@@ -8,7 +8,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <h2 className="text-lg font-semibold text-slate-800">
-              🎓 Smart Campus Hub
+              🎓 UniPilot
             </h2>
             <p className="mt-3 text-sm text-slate-500 leading-relaxed">
               A unified platform to manage campus facilities, bookings, and maintenance workflows efficiently.
@@ -72,7 +72,7 @@ export default function Footer() {
         
         <div className="flex items-center justify-center text-sm text-slate-500 text-center">
           <p>
-            © {new Date().getFullYear()} Smart Campus Hub. All rights reserved.
+            © {new Date().getFullYear()} UniPilot. All rights reserved.
           </p>
         </div>
 
