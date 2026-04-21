@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getResourceById } from '../api/api'
+import { readAuthSession, authSessionChangeEvent } from '../utils/authSession'
 
 function formatEnumLabel(value) {
   return value
@@ -14,11 +15,18 @@ export default function ResourceDetailsCard() {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [session, setSession] = useState(() => readAuthSession())
 
   useEffect(() => {
     // Extract ID from pathname (e.g., "/resources/123")
     const match = window.location.pathname.match(/^\/resources\/(\d+)$/)
     const resourceId = match ? match[1] : null
+
+    const syncSession = () => setSession(readAuthSession())
+
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(authSessionChangeEvent, syncSession)
+
 
     if (!resourceId) {
       setErrorMessage('Invalid resource ID.')
@@ -53,6 +61,8 @@ export default function ResourceDetailsCard() {
 
     return () => {
       isCurrent = false
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(authSessionChangeEvent, syncSession)
     }
   }, [])
 
@@ -239,13 +249,24 @@ export default function ResourceDetailsCard() {
         )}
 
         <div className="mt-10 flex justify-end">
-          <button 
-            type="button"
-            className="inline-flex items-center justify-center rounded-full bg-teal-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-teal-500/20 transition-all hover:bg-teal-700 hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 disabled:opacity-50 disabled:pointer-events-none"
-            disabled={!isActive}
-          >
-            {isActive ? 'Book Now' : 'Currently Unavailable'}
-          </button>
+          {session && session.role === 'ADMIN' ? null : (
+            session && session.role === 'USER' ? (
+              <button 
+                type="button"
+                className="inline-flex items-center justify-center rounded-full bg-teal-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-teal-500/20 transition-all hover:bg-teal-700 hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 disabled:opacity-50 disabled:pointer-events-none"
+                disabled={!isActive}
+              >
+                {isActive ? 'Book Now' : 'Currently Unavailable'}
+              </button>
+            ) : (
+              <a
+                href="/login"
+                className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800"
+              >
+                Sign in to book
+              </a>
+            )
+          )}
         </div>
       </article>
     </div>
