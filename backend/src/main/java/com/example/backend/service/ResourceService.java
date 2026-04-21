@@ -4,7 +4,7 @@ import com.example.backend.dto.request.ResourceUpsertRequest;
 import com.example.backend.dto.request.EquipmentMetadataRequest;
 import com.example.backend.dto.response.ResourceResponse;
 import com.example.backend.dto.response.EquipmentMetadataResponse;
-import com.example.backend.dto.response.CloudinaryUploadResponse;
+import com.example.backend.dto.response.ResourceImageResponse;
 import com.example.backend.entity.EquipmentMetadata;
 import com.example.backend.entity.Resource;
 import com.example.backend.entity.ResourceImage;
@@ -19,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.example.backend.enums.EquipmentCategory;
 import jakarta.persistence.criteria.JoinType;
@@ -143,19 +145,40 @@ public class ResourceService {
 
     @Transactional
     public ResourceResponse updateResource(Long resourceId, ResourceUpsertRequest request) {
-        return updateResource(resourceId, request, null, null);
+        return updateResource(resourceId, request, null, null, null);
     }
 
     @Transactional
     public ResourceResponse updateResource(Long resourceId, ResourceUpsertRequest request, MultipartFile coverImage, List<MultipartFile> additionalImages) {
+        return updateResource(resourceId, request, coverImage, additionalImages, null);
+    }
+
+    @Transactional
+    public ResourceResponse updateResource(
+            Long resourceId,
+            ResourceUpsertRequest request,
+            MultipartFile coverImage,
+            List<MultipartFile> additionalImages,
+            List<String> keepImagePublicIds
+    ) {
         validateAvailabilityWindow(request);
 
         Resource resource = findResource(resourceId);
         apply(resource, request);
 
-        // replace cover image if provided
+        Set<String> keepPublicIds = new HashSet<>();
+        if (keepImagePublicIds != null) {
+            for (String id : keepImagePublicIds) {
+                if (id != null && !id.isBlank()) {
+                    keepPublicIds.add(id.trim());
+                }
+            }
+        }
+
+        List<ResourceImage> oldCovers = resource.getImages().stream().filter(ResourceImage::isCover).collect(Collectors.toList());
+        boolean keepExistingCover = oldCovers.stream().anyMatch(img -> keepPublicIds.contains(img.getPublicId()));
+
         if (coverImage != null && !coverImage.isEmpty()) {
-            List<ResourceImage> oldCovers = resource.getImages().stream().filter(ResourceImage::isCover).collect(Collectors.toList());
             for (ResourceImage oi : oldCovers) {
                 cloudinaryStorageService.deleteByPublicId(oi.getPublicId());
                 resource.removeImage(oi);
@@ -167,34 +190,42 @@ public class ResourceService {
             newCover.setUrl(upload.url());
             newCover.setCover(true);
             resource.addImage(newCover);
-        }
-
-        // replace additional images if provided (delete existing extras and add new ones)
-        if (additionalImages != null) {
-            int extraCount = 0;
-            for (MultipartFile f : additionalImages) {
-                if (f != null && !f.isEmpty()) extraCount++;
-            }
-            if (extraCount > 2) {
-                throw new IllegalArgumentException("A maximum of 2 additional images is allowed");
-            }
-            List<ResourceImage> oldExtras = resource.getImages().stream().filter(i -> !i.isCover()).collect(Collectors.toList());
-            for (ResourceImage oi : oldExtras) {
+        } else if (!keepExistingCover) {
+            for (ResourceImage oi : oldCovers) {
                 cloudinaryStorageService.deleteByPublicId(oi.getPublicId());
                 resource.removeImage(oi);
             }
+        }
 
-            int added = 0;
+        List<ResourceImage> oldExtras = resource.getImages().stream().filter(i -> !i.isCover()).collect(Collectors.toList());
+        for (ResourceImage oi : oldExtras) {
+            if (!keepPublicIds.contains(oi.getPublicId())) {
+                cloudinaryStorageService.deleteByPublicId(oi.getPublicId());
+                resource.removeImage(oi);
+            }
+        }
+
+        if (additionalImages != null) {
+            int uploadCount = 0;
+            for (MultipartFile f : additionalImages) {
+                if (f != null && !f.isEmpty()) {
+                    uploadCount++;
+                }
+            }
+
+            long keptExtras = resource.getImages().stream().filter(i -> !i.isCover()).count();
+            if (keptExtras + uploadCount > 2) {
+                throw new IllegalArgumentException("A maximum of 2 additional images is allowed");
+            }
+
             for (MultipartFile f : additionalImages) {
                 if (f == null || f.isEmpty()) continue;
-                if (added >= 2) break;
                 var upload = cloudinaryStorageService.uploadResourceImage(resource.getId(), f);
                 ResourceImage img = new ResourceImage();
                 img.setPublicId(upload.publicId());
                 img.setUrl(upload.url());
                 img.setCover(false);
                 resource.addImage(img);
-                added++;
             }
         }
 
@@ -287,8 +318,8 @@ public class ResourceService {
             );
         }
 
-        List<CloudinaryUploadResponse> imgs = resource.getImages().stream()
-            .map(i -> new CloudinaryUploadResponse(i.getUrl(), i.getPublicId(), null))
+        List<ResourceImageResponse> imgs = resource.getImages().stream()
+            .map(i -> new ResourceImageResponse(i.getUrl(), i.getPublicId(), i.isCover()))
             .toList();
 
         return new ResourceResponse(

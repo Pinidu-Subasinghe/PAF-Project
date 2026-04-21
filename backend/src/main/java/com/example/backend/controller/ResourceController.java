@@ -86,9 +86,10 @@ public class ResourceController {
             @PathVariable Long resourceId,
             @Valid @RequestPart("data") ResourceUpsertRequest request,
             @RequestPart(value = "coverImage", required = false) MultipartFile coverImage,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestParam(value = "keepImagePublicIds", required = false) List<String> keepImagePublicIds
     ) {
-        return ResponseEntity.ok(resourceService.updateResource(resourceId, request, coverImage, images));
+        return ResponseEntity.ok(resourceService.updateResource(resourceId, request, coverImage, images, keepImagePublicIds));
     }
 
     @DeleteMapping("/{resourceId}")

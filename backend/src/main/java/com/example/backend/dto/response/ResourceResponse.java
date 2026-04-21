@@ -15,7 +15,7 @@ public record ResourceResponse(
         String status,
         String description,
         com.example.backend.dto.response.EquipmentMetadataResponse equipment,
-        List<com.example.backend.dto.response.CloudinaryUploadResponse> images,
+        List<com.example.backend.dto.response.ResourceImageResponse> images,
         Instant createdAt,
         Instant updatedAt
 ) {

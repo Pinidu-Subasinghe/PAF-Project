@@ -107,7 +107,7 @@ export async function getResourceById(resourceId) {
   return request(`/api/v1/resources/${resourceId}`)
 }
 
-function buildResourceFormData(resourcePayload, { coverImage, images } = {}) {
+function buildResourceFormData(resourcePayload, { coverImage, images, keepImagePublicIds } = {}) {
   const formData = new FormData()
   const dataBlob = new Blob([JSON.stringify(resourcePayload)], { type: 'application/json' })
   formData.append('data', dataBlob)
@@ -118,6 +118,12 @@ function buildResourceFormData(resourcePayload, { coverImage, images } = {}) {
 
   if (Array.isArray(images)) {
     images.filter(Boolean).forEach((image) => formData.append('images', image))
+  }
+
+  if (Array.isArray(keepImagePublicIds)) {
+    keepImagePublicIds
+      .filter((publicId) => typeof publicId === 'string' && publicId.trim() !== '')
+      .forEach((publicId) => formData.append('keepImagePublicIds', publicId))
   }
 
   return formData
