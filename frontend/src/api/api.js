@@ -176,3 +176,46 @@ export async function deleteResource(resourceId) {
     headers: getAuthHeader(),
   })
 }
+
+export async function createBooking(bookingPayload) {
+  return request('/api/bookings', {
+    method: 'POST',
+    body: bookingPayload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function getMyBookings() {
+  return request('/api/bookings/my', {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function getAllBookings(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return request(`/api/bookings${query}`, {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function approveBooking(bookingId) {
+  return request(`/api/bookings/${bookingId}/approve`, {
+    method: 'PUT',
+    headers: getAuthHeader(),
+  })
+}
+
+export async function rejectBooking(bookingId, reason) {
+  return request(`/api/bookings/${bookingId}/reject`, {
+    method: 'PUT',
+    body: { reason },
+    headers: getAuthHeader(),
+  })
+}
+
+export async function cancelBooking(bookingId) {
+  return request(`/api/bookings/${bookingId}/cancel`, {
+    method: 'PUT',
+    headers: getAuthHeader(),
+  })
+}
