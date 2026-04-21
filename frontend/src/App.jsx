@@ -9,8 +9,8 @@ import UserDashboard from './pages/UserDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import ResourcesPage from './pages/ResourcesPage'
 import AdminResourcesPage from './components/admin/AdminResourcesPage'
-import AllResourcesPage from './pages/AllResourcesPage'
 import ResourceDetailsCard from './components/ResourceDetailsCard'
+import AboutUs from './components/AboutUs'
 import { consumeGoogleOAuthRedirect } from './utils/googleOAuth'
 import { readAuthSession, authSessionChangeEvent } from './utils/authSession'
 
@@ -62,6 +62,7 @@ function App() {
   const isLoginPage = currentPath.startsWith('/login') || currentPath.startsWith('/auth')
   const isSignUpPage = currentPath.startsWith('/signup') || currentPath.startsWith('/register')
   const isDashboardPage = currentPath.startsWith('/dashboard') || currentPath.startsWith('/user')
+  const isAboutUsPage = currentPath.startsWith('/about-us')
   const isResourceDetailsPage = currentPath.startsWith('/resources/') && currentPath.length > '/resources/'.length
   const isResourcesPage = currentPath.startsWith('/resources') && !isResourceDetailsPage
   const isAdminResourcesPage = currentPath.startsWith('/admin/resources')
@@ -92,6 +93,8 @@ function App() {
                   ? <ResourceDetailsCard />
                 : isResourcesPage
                   ? <ResourcesPage />
+              : isAboutUsPage
+                ? <AboutUs />
               : isDashboardPage
                 ? (session?.role === 'ADMIN' ? <AdminDashboard /> : <UserDashboard />)
                 : <HomePage />}
