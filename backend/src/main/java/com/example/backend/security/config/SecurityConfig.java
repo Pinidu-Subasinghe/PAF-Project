@@ -51,13 +51,20 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/register/verify-otp", "/api/v1/auth/login")
-                    .permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/resources", "/api/v1/resources/**").permitAll()
-                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                    // public auth endpoints
+                    .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/register/verify-otp", "/api/v1/auth/login").permitAll()
+                    // resource modification endpoints require ADMIN role (defense-in-depth)
+                    .requestMatchers(HttpMethod.POST, "/api/v1/resources").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/v1/resources/**").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/resources/**").hasRole("ADMIN")
+                    // uploads for resources should also be admin-only
+                    .requestMatchers(HttpMethod.POST, "/api/v1/uploads/resources/**").hasRole("ADMIN")
+                    // public resource reads
+                    .requestMatchers(HttpMethod.GET, "/api/v1/resources", "/api/v1/resources/**").permitAll()
+                    .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                     .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        .anyRequest().authenticated()
+                    .requestMatchers("/error").permitAll()
+                    .anyRequest().authenticated()
                 )
             .oauth2Login(oauth2 -> oauth2
                 .successHandler(oAuth2AuthenticationSuccessHandler)
