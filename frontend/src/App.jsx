@@ -8,7 +8,6 @@ import SignUpPage from './pages/SignUpPage'
 import UserDashboard from './pages/UserDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import ResourcesPage from './pages/ResourcesPage'
-import AdminResourcesPage from './components/admin/AdminResourcesPage'
 import ResourceDetailsCard from './components/ResourceDetailsCard'
 import AboutUs from './components/AboutUs'
 import { consumeGoogleOAuthRedirect } from './utils/googleOAuth'
@@ -65,7 +64,6 @@ function App() {
   const isAboutUsPage = currentPath.startsWith('/about-us')
   const isResourceDetailsPage = currentPath.startsWith('/resources/') && currentPath.length > '/resources/'.length
   const isResourcesPage = currentPath.startsWith('/resources') && !isResourceDetailsPage
-  const isAdminResourcesPage = currentPath.startsWith('/admin/resources')
   const isAllResourcesPage = currentPath.startsWith('/admin/all-resources')
 
   const isAuthPage = isLoginPage || isSignUpPage
@@ -85,9 +83,7 @@ function App() {
           ? <SignUpPage />
           : isLoginPage
             ? <LoginPage />
-            : isAdminResourcesPage
-              ? <AdminResourcesPage />
-              : isAllResourcesPage
+            : isAllResourcesPage
                 ? <AllResourcesPage />
                 : isResourceDetailsPage
                   ? <ResourceDetailsCard />

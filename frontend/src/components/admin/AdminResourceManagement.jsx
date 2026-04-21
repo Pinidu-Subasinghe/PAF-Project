@@ -9,7 +9,7 @@ function formatEnumLabel(value) {
     .join(' ')
 }
 
-export default function AdminResourceManagement() {
+export default function AdminResourceManagement({ onSelectResource } = {}) {
   const [resources, setResources] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -33,6 +33,11 @@ export default function AdminResourceManagement() {
   }, [])
 
   const handleCardClick = (resourceId) => {
+    if (typeof onSelectResource === 'function') {
+      onSelectResource(resourceId)
+      return
+    }
+
     window.history.pushState(null, '', `/resources/${resourceId}`)
     window.dispatchEvent(new Event('popstate'))
   }

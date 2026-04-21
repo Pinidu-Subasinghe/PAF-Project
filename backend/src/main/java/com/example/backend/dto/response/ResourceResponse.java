@@ -2,6 +2,7 @@ package com.example.backend.dto.response;
 
 import java.time.Instant;
 import java.time.LocalTime;
+import java.util.List;
 
 public record ResourceResponse(
         Long id,
@@ -14,6 +15,7 @@ public record ResourceResponse(
         String status,
         String description,
         com.example.backend.dto.response.EquipmentMetadataResponse equipment,
+        List<com.example.backend.dto.response.ResourceImageResponse> images,
         Instant createdAt,
         Instant updatedAt
 ) {

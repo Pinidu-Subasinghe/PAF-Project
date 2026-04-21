@@ -11,6 +11,9 @@ import org.springframework.security.core.Authentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -55,10 +58,15 @@ public class ResourceController {
         return ResponseEntity.ok(resourceService.getResource(resourceId));
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ResourceResponse> createResource(@Valid @RequestBody ResourceUpsertRequest request, Authentication authentication) {
-        ResourceResponse saved = resourceService.createResource(request);
+    public ResponseEntity<ResourceResponse> createResource(
+            @Valid @RequestPart("data") ResourceUpsertRequest request,
+            @RequestPart(value = "coverImage", required = false) MultipartFile coverImage,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            Authentication authentication
+    ) {
+        ResourceResponse saved = resourceService.createResource(request, coverImage, images);
 
         try {
             if (authentication != null && authentication.getName() != null) {
@@ -72,13 +80,16 @@ public class ResourceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @PutMapping("/{resourceId}")
+    @PutMapping(value = "/{resourceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResourceResponse> updateResource(
             @PathVariable Long resourceId,
-            @Valid @RequestBody ResourceUpsertRequest request
+            @Valid @RequestPart("data") ResourceUpsertRequest request,
+            @RequestPart(value = "coverImage", required = false) MultipartFile coverImage,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestParam(value = "keepImagePublicIds", required = false) List<String> keepImagePublicIds
     ) {
-        return ResponseEntity.ok(resourceService.updateResource(resourceId, request));
+        return ResponseEntity.ok(resourceService.updateResource(resourceId, request, coverImage, images, keepImagePublicIds));
     }
 
     @DeleteMapping("/{resourceId}")
