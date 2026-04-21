@@ -26,8 +26,7 @@ public class NotificationService {
     private static final String PASSWORD_SETUP_TITLE = "Set your account password";
     private static final String PASSWORD_SETUP_MESSAGE = "You signed up with Google. Set a password to enable email login.";
     private static final String PASSWORD_SETUP_ACTION_TARGET = "change-password";
-    private static final String RESOURCE_ADDED_TITLE = "Resource added successfully";
-    private static final String RESOURCE_ADDED_ACTION_TARGET = "manage-resources";
+    // RESOURCE_ADDED notifications removed; frontend shows toast instead
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -124,25 +123,7 @@ public class NotificationService {
         notificationRepository.deleteByUserId(userId);
     }
 
-    @Transactional
-    public void createResourceAddedNotification(String email, String resourceName) {
-        AppUser user = findByEmail(email);
-        if (user == null || user.getId() == null) {
-            return;
-        }
-
-        Notification notification = new Notification();
-        notification.setUser(user);
-        notification.setType(NotificationType.RESOURCE_ADDED);
-        notification.setTitle(RESOURCE_ADDED_TITLE);
-
-        String namePart = (resourceName == null || resourceName.isBlank()) ? "" : "'" + resourceName + "' ";
-        notification.setMessage("Resource " + namePart + "added successfully.");
-        notification.setActionTarget(RESOURCE_ADDED_ACTION_TARGET);
-
-        Notification saved = notificationRepository.save(notification);
-        log.info("Created RESOURCE_ADDED notification (id={}) for user {} about resource {}", saved.getId(), user.getEmail(), resourceName);
-    }
+    // resource-added notifications intentionally removed; use frontend toast notifications
 
     private AppUser findByEmail(String email) {
         String normalizedEmail = normalizeEmail(email);
