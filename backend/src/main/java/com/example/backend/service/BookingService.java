@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -46,6 +47,12 @@ public class BookingService {
 
         validateDate(request.date());
         validateTimeWindow(request.startTime(), request.endTime());
+        validateResourceAvailability(
+            request.startTime(),
+            request.endTime(),
+            resource.getAvailableFrom(),
+            resource.getAvailableTo()
+        );
         validateCapacity(request.attendees(), resource.getCapacity());
 
         Booking booking = new Booking();
@@ -135,6 +142,34 @@ public class BookingService {
     private void validateTimeWindow(java.time.LocalTime startTime, java.time.LocalTime endTime) {
         if (!endTime.isAfter(startTime)) {
             throw new InvalidTimeException("End time must be after start time", "endTime");
+        }
+    }
+
+    private void validateResourceAvailability(
+            LocalTime startTime,
+            LocalTime endTime,
+            LocalTime availableFrom,
+            LocalTime availableTo
+    ) {
+        if (availableFrom == null || availableTo == null || !availableTo.isAfter(availableFrom)) {
+            throw new InvalidTimeException(
+                    "Resource available time is not configured for this resource.",
+                    "resourceId"
+            );
+        }
+
+        if (startTime.isBefore(availableFrom)) {
+            throw new InvalidTimeException(
+                    "Start time must be within resource available time.",
+                    "startTime"
+            );
+        }
+
+        if (endTime.isAfter(availableTo)) {
+            throw new InvalidTimeException(
+                    "End time must be within resource available time.",
+                    "endTime"
+            );
         }
     }
 

@@ -172,6 +172,8 @@ class BookingServiceValidationTests {
         Resource resource = new Resource();
         resource.setId(2L);
         resource.setCapacity(4);
+        resource.setAvailableFrom(LocalTime.of(9, 0));
+        resource.setAvailableTo(LocalTime.of(18, 0));
         when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
 
         BookingCreateRequest request = new BookingCreateRequest(
@@ -192,32 +194,121 @@ class BookingServiceValidationTests {
         verify(bookingRepository, never()).save(any(Booking.class));
     }
 
-        @Test
-        void createBooking_withResourceCapacityMissing_throwsCapacityExceeded() {
-                when(userRepository.findByEmail("user@unipilot.test")).thenReturn(Optional.of(user));
+    @Test
+    void createBooking_withResourceCapacityMissing_throwsCapacityExceeded() {
+        when(userRepository.findByEmail("user@unipilot.test")).thenReturn(Optional.of(user));
 
-                Resource resource = new Resource();
-                resource.setId(2L);
-                resource.setCapacity(null);
-                when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
+        Resource resource = new Resource();
+        resource.setId(2L);
+        resource.setCapacity(null);
+        resource.setAvailableFrom(LocalTime.of(9, 0));
+        resource.setAvailableTo(LocalTime.of(18, 0));
+        when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
 
-                BookingCreateRequest request = new BookingCreateRequest(
-                                2L,
-                                LocalDate.now(),
-                                LocalTime.of(15, 0),
-                                LocalTime.of(17, 0),
-                                "Test 01",
-                                5
-                );
+        BookingCreateRequest request = new BookingCreateRequest(
+                2L,
+                LocalDate.now(),
+                LocalTime.of(15, 0),
+                LocalTime.of(17, 0),
+                "Test 01",
+                5
+        );
 
-                CapacityExceededException ex = assertThrows(
-                                CapacityExceededException.class,
-                                () -> bookingService.createBooking("user@unipilot.test", request)
-                );
+        CapacityExceededException ex = assertThrows(
+                CapacityExceededException.class,
+                () -> bookingService.createBooking("user@unipilot.test", request)
+        );
 
-                assertEquals("Resource capacity is not configured for this resource.", ex.getMessage());
-                verify(bookingRepository, never()).save(any(Booking.class));
-        }
+        assertEquals("Resource capacity is not configured for this resource.", ex.getMessage());
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void createBooking_withStartTimeBeforeResourceAvailability_throwsInvalidTime() {
+        when(userRepository.findByEmail("user@unipilot.test")).thenReturn(Optional.of(user));
+
+        Resource resource = new Resource();
+        resource.setId(2L);
+        resource.setCapacity(10);
+        resource.setAvailableFrom(LocalTime.of(10, 0));
+        resource.setAvailableTo(LocalTime.of(18, 0));
+        when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
+
+        BookingCreateRequest request = new BookingCreateRequest(
+                2L,
+                LocalDate.now(),
+                LocalTime.of(9, 30),
+                LocalTime.of(11, 0),
+                "Morning prep",
+                3
+        );
+
+        InvalidTimeException ex = assertThrows(
+                InvalidTimeException.class,
+                () -> bookingService.createBooking("user@unipilot.test", request)
+        );
+
+        assertEquals("Start time must be within resource available time.", ex.getMessage());
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void createBooking_withEndTimeAfterResourceAvailability_throwsInvalidTime() {
+        when(userRepository.findByEmail("user@unipilot.test")).thenReturn(Optional.of(user));
+
+        Resource resource = new Resource();
+        resource.setId(2L);
+        resource.setCapacity(10);
+        resource.setAvailableFrom(LocalTime.of(10, 0));
+        resource.setAvailableTo(LocalTime.of(18, 0));
+        when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
+
+        BookingCreateRequest request = new BookingCreateRequest(
+                2L,
+                LocalDate.now(),
+                LocalTime.of(17, 0),
+                LocalTime.of(18, 30),
+                "Evening session",
+                3
+        );
+
+        InvalidTimeException ex = assertThrows(
+                InvalidTimeException.class,
+                () -> bookingService.createBooking("user@unipilot.test", request)
+        );
+
+        assertEquals("End time must be within resource available time.", ex.getMessage());
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void createBooking_withResourceAvailabilityMissing_throwsInvalidTime() {
+        when(userRepository.findByEmail("user@unipilot.test")).thenReturn(Optional.of(user));
+
+        Resource resource = new Resource();
+        resource.setId(2L);
+        resource.setCapacity(10);
+        resource.setAvailableFrom(null);
+        resource.setAvailableTo(LocalTime.of(18, 0));
+        when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
+
+        BookingCreateRequest request = new BookingCreateRequest(
+                2L,
+                LocalDate.now(),
+                LocalTime.of(15, 0),
+                LocalTime.of(17, 0),
+                "Test 01",
+                5
+        );
+
+        InvalidTimeException ex = assertThrows(
+                InvalidTimeException.class,
+                () -> bookingService.createBooking("user@unipilot.test", request)
+        );
+
+        assertEquals("Resource available time is not configured for this resource.", ex.getMessage());
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 
     @Test
     void createBooking_withValidPayload_savesPendingBooking() {
@@ -232,10 +323,12 @@ class BookingServiceValidationTests {
                 5
         );
 
-                Resource resource = new Resource();
-                resource.setId(2L);
-                resource.setCapacity(10);
-                when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
+        Resource resource = new Resource();
+        resource.setId(2L);
+        resource.setCapacity(10);
+        resource.setAvailableFrom(LocalTime.of(9, 0));
+        resource.setAvailableTo(LocalTime.of(18, 0));
+        when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking booking = invocation.getArgument(0);
             booking.setId(88L);
