@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import Swal from 'sweetalert2'
+import 'sweetalert2/dist/sweetalert2.min.css'
 import {
   approveBooking,
   cancelBooking,
@@ -62,11 +64,32 @@ export default function BookingList({ scope = 'my' }) {
   )
 
   const handleApprove = async (bookingId) => {
+    const confirmation = await Swal.fire({
+      title: 'Approve booking?',
+      text: 'This booking request will be marked as approved.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, approve',
+      cancelButtonText: 'No',
+      confirmButtonColor: '#059669',
+    })
+
+    if (!confirmation.isConfirmed) {
+      return
+    }
+
     setIsActionLoading(true)
     setErrorMessage('')
     try {
       await approveBooking(bookingId)
       await loadBookings()
+      await Swal.fire({
+        title: 'Approved',
+        text: 'Booking was approved successfully.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+      })
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to approve booking.')
     } finally {
@@ -75,16 +98,51 @@ export default function BookingList({ scope = 'my' }) {
   }
 
   const handleReject = async (bookingId) => {
-    const reason = window.prompt('Enter rejection reason:')
-    if (!reason || !reason.trim()) {
+    const rejectionInput = await Swal.fire({
+      title: 'Reject booking',
+      text: 'Please provide a reason for rejection.',
+      icon: 'warning',
+      input: 'textarea',
+      inputLabel: 'Rejection reason',
+      inputPlaceholder: 'Type your reason here...',
+      inputAttributes: {
+        maxlength: '500',
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Reject booking',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#dc2626',
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return 'Rejection reason is required.'
+        }
+
+        if (value.trim().length > 500) {
+          return 'Rejection reason must be at most 500 characters.'
+        }
+
+        return null
+      },
+    })
+
+    if (!rejectionInput.isConfirmed) {
       return
     }
+
+    const reason = rejectionInput.value.trim()
 
     setIsActionLoading(true)
     setErrorMessage('')
     try {
-      await rejectBooking(bookingId, reason.trim())
+      await rejectBooking(bookingId, reason)
       await loadBookings()
+      await Swal.fire({
+        title: 'Rejected',
+        text: 'Booking was rejected successfully.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+      })
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to reject booking.')
     } finally {
