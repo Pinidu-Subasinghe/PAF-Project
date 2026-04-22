@@ -81,6 +81,14 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getField(), request);
     }
 
+        @ExceptionHandler(BookingConflictException.class)
+        public ResponseEntity<ApiError> handleBookingConflict(
+                        BookingConflictException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), ex.getField(), request);
+        }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleInvalidJson(
             HttpMessageNotReadableException ex,

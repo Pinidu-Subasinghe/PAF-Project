@@ -5,6 +5,8 @@ import com.example.backend.dto.response.BookingResponse;
 import com.example.backend.entity.AppUser;
 import com.example.backend.entity.Booking;
 import com.example.backend.entity.Resource;
+import com.example.backend.enums.BookingStatus;
+import com.example.backend.exception.BookingConflictException;
 import com.example.backend.exception.CapacityExceededException;
 import com.example.backend.exception.InvalidTimeException;
 import com.example.backend.exception.ResourceNotFoundException;
@@ -22,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -145,6 +148,8 @@ class BookingServiceValidationTests {
         Resource resource = new Resource();
         resource.setId(2L);
         resource.setCapacity(10);
+                resource.setAvailableFrom(LocalTime.of(9, 0));
+                resource.setAvailableTo(LocalTime.of(18, 0));
         when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
 
         BookingCreateRequest request = new BookingCreateRequest(
@@ -192,6 +197,82 @@ class BookingServiceValidationTests {
 
         assertEquals("Number of attendees exceeds resource capacity (Max: 4).", ex.getMessage());
         verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void createBooking_withOverlappingBooking_throwsBookingConflict() {
+        when(userRepository.findByEmail("user@unipilot.test")).thenReturn(Optional.of(user));
+
+        Resource resource = new Resource();
+        resource.setId(2L);
+        resource.setCapacity(10);
+        resource.setAvailableFrom(LocalTime.of(9, 0));
+        resource.setAvailableTo(LocalTime.of(18, 0));
+        when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
+
+        Booking existingBooking = new Booking();
+        existingBooking.setStatus(BookingStatus.PENDING);
+        existingBooking.setStartTime(LocalTime.of(10, 0));
+        existingBooking.setEndTime(LocalTime.of(11, 0));
+        when(bookingRepository.findByResourceIdAndDate(2L, LocalDate.now()))
+                .thenReturn(List.of(existingBooking));
+
+        BookingCreateRequest request = new BookingCreateRequest(
+                2L,
+                LocalDate.now(),
+                LocalTime.of(10, 30),
+                LocalTime.of(11, 30),
+                "Test overlap",
+                2
+        );
+
+        BookingConflictException ex = assertThrows(
+                BookingConflictException.class,
+                () -> bookingService.createBooking("user@unipilot.test", request)
+        );
+
+        assertEquals("This resource is already booked for the selected time range.", ex.getMessage());
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void createBooking_withOverlappingCancelledBooking_allowsSave() {
+        when(userRepository.findByEmail("user@unipilot.test")).thenReturn(Optional.of(user));
+
+        Resource resource = new Resource();
+        resource.setId(2L);
+        resource.setCapacity(10);
+        resource.setAvailableFrom(LocalTime.of(9, 0));
+        resource.setAvailableTo(LocalTime.of(18, 0));
+        when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
+
+        Booking cancelledBooking = new Booking();
+        cancelledBooking.setStatus(BookingStatus.CANCELLED);
+        cancelledBooking.setStartTime(LocalTime.of(10, 0));
+        cancelledBooking.setEndTime(LocalTime.of(11, 0));
+        when(bookingRepository.findByResourceIdAndDate(2L, LocalDate.now()))
+                .thenReturn(List.of(cancelledBooking));
+
+        BookingCreateRequest request = new BookingCreateRequest(
+                2L,
+                LocalDate.now(),
+                LocalTime.of(10, 30),
+                LocalTime.of(11, 30),
+                "Cancelled overlap should pass",
+                2
+        );
+
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
+            Booking booking = invocation.getArgument(0);
+            booking.setId(91L);
+            booking.setCreatedAt(Instant.now());
+            return booking;
+        });
+
+        BookingResponse response = bookingService.createBooking("user@unipilot.test", request);
+
+        assertEquals(91L, response.id());
+        verify(bookingRepository).save(any(Booking.class));
     }
 
     @Test
@@ -329,6 +410,7 @@ class BookingServiceValidationTests {
         resource.setAvailableFrom(LocalTime.of(9, 0));
         resource.setAvailableTo(LocalTime.of(18, 0));
         when(resourceRepository.findById(2L)).thenReturn(Optional.of(resource));
+                when(bookingRepository.findByResourceIdAndDate(2L, LocalDate.now())).thenReturn(List.of());
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking booking = invocation.getArgument(0);
             booking.setId(88L);
