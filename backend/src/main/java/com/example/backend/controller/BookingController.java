@@ -53,21 +53,22 @@ public class BookingController {
     }
 
     @PutMapping("/{id}/approve")
-    public ResponseEntity<BookingResponse> approveBooking(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.approveBooking(id));
+    public ResponseEntity<BookingResponse> approveBooking(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(bookingService.approveBooking(id, requireEmail(authentication)));
     }
 
     @PutMapping("/{id}/reject")
     public ResponseEntity<BookingResponse> rejectBooking(
             @PathVariable Long id,
-            @Valid @RequestBody BookingRejectRequest request
+            @Valid @RequestBody BookingRejectRequest request,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(bookingService.rejectBooking(id, request));
+        return ResponseEntity.ok(bookingService.rejectBooking(id, request, requireEmail(authentication)));
     }
 
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<BookingResponse> cancelBooking(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.cancelBooking(id));
+    public ResponseEntity<BookingResponse> cancelBooking(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(bookingService.cancelBooking(id, requireEmail(authentication)));
     }
 
     private String requireEmail(Authentication authentication) {

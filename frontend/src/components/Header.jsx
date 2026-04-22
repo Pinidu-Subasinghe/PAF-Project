@@ -30,6 +30,14 @@ function resolveNotificationDestination(notification, authSession) {
     return authSession?.role === 'ADMIN' ? '/admin-dashboard?tab=change-password' : '/user-dashboard?tab=change-password'
   }
 
+  if (target === 'manage-bookings') {
+    return '/admin-dashboard?tab=manage-bookings'
+  }
+
+  if (target === 'my-bookings') {
+    return '/user-dashboard?tab=my-bookings'
+  }
+
   if (target === 'manage-resources') {
     return '/admin-dashboard?tab=manage-resources'
   }

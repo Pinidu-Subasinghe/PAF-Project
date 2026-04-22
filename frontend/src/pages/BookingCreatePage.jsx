@@ -1,7 +1,10 @@
 import BookingForm from '../components/booking/BookingForm'
 
 export default function BookingCreatePage() {
-  const match = window.location.pathname.match(/^\/bookings\/create\/(\d+)$/)
+  let match = window.location.pathname.match(/^\/bookings\/create\/(\d+)$/)
+  if (!match) {
+    match = window.location.pathname.match(/^\/resources\/(\d+)\/book-now$/)
+  }
   const resourceId = match ? Number(match[1]) : null
 
   if (!resourceId) {
