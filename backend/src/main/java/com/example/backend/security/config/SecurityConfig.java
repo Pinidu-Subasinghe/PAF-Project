@@ -59,6 +59,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.DELETE, "/api/v1/resources/**").hasRole("ADMIN")
                     // uploads for resources should also be admin-only
                     .requestMatchers(HttpMethod.POST, "/api/v1/uploads/resources/**").hasRole("ADMIN")
+                    // booking endpoints: only users can create bookings
+                    .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("USER")
                     // public resource reads
                     .requestMatchers(HttpMethod.GET, "/api/v1/resources", "/api/v1/resources/**").permitAll()
                     .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
