@@ -2,12 +2,22 @@ import { readAuthSession } from '../utils/authSession'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080').replace(/\/$/, '')
 
-function readErrorMessage(payload, fallbackMessage) {
-  if (payload && typeof payload === 'object' && typeof payload.message === 'string') {
-    return payload.message
+class ApiRequestError extends Error {
+  constructor(message, field) {
+    super(message)
+    this.name = 'ApiRequestError'
+    this.field = field
+  }
+}
+
+function readErrorDetails(payload, fallbackMessage) {
+  if (payload && typeof payload === 'object') {
+    const message = typeof payload.message === 'string' ? payload.message : fallbackMessage
+    const field = typeof payload.field === 'string' && payload.field.trim() ? payload.field : null
+    return { message, field }
   }
 
-  return fallbackMessage
+  return { message: fallbackMessage, field: null }
 }
 
 async function request(path, options = {}) {
@@ -25,7 +35,8 @@ async function request(path, options = {}) {
   const payload = await response.json().catch(() => null)
 
   if (!response.ok) {
-    throw new Error(readErrorMessage(payload, 'Request failed. Please try again.'))
+    const { message, field } = readErrorDetails(payload, 'Request failed. Please try again.')
+    throw new ApiRequestError(message, field)
   }
 
   return payload
@@ -144,7 +155,8 @@ export async function createResource(resourcePayload, options) {
   const payload = await response.json().catch(() => null)
 
   if (!response.ok) {
-    throw new Error(readErrorMessage(payload, 'Request failed. Please try again.'))
+    const { message, field } = readErrorDetails(payload, 'Request failed. Please try again.')
+    throw new ApiRequestError(message, field)
   }
 
   return payload
@@ -164,7 +176,8 @@ export async function updateResource(resourceId, resourcePayload, options) {
   const payload = await response.json().catch(() => null)
 
   if (!response.ok) {
-    throw new Error(readErrorMessage(payload, 'Request failed. Please try again.'))
+    const { message, field } = readErrorDetails(payload, 'Request failed. Please try again.')
+    throw new ApiRequestError(message, field)
   }
 
   return payload

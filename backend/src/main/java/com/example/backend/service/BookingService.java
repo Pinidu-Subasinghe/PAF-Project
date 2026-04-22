@@ -5,8 +5,11 @@ import com.example.backend.dto.request.BookingRejectRequest;
 import com.example.backend.dto.response.BookingResponse;
 import com.example.backend.entity.AppUser;
 import com.example.backend.entity.Booking;
+import com.example.backend.entity.Resource;
 import com.example.backend.enums.BookingStatus;
 import com.example.backend.exception.BookingNotFoundException;
+import com.example.backend.exception.CapacityExceededException;
+import com.example.backend.exception.InvalidTimeException;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.UserNotFoundException;
 import com.example.backend.repository.BookingRepository;
@@ -15,6 +18,8 @@ import com.example.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -38,10 +43,17 @@ public class BookingService {
     public BookingResponse createBooking(String userEmail, BookingCreateRequest request) {
         validateCreateRequest(request);
         AppUser user = findUserByEmail(userEmail);
+        Resource resource = findResourceById(request.resourceId());
 
-        if (!resourceRepository.existsById(request.resourceId())) {
-            throw new ResourceNotFoundException("Resource not found");
-        }
+        validateDate(request.date());
+        validateTimeWindow(request.startTime(), request.endTime());
+        validateResourceAvailability(
+            request.startTime(),
+            request.endTime(),
+            resource.getAvailableFrom(),
+            resource.getAvailableTo()
+        );
+        validateCapacity(request.attendees(), resource.getCapacity());
 
         Booking booking = new Booking();
         booking.setResourceId(request.resourceId());
@@ -116,9 +128,64 @@ public class BookingService {
                 .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
     }
 
+    private Resource findResourceById(Long resourceId) {
+        return resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found"));
+    }
+
+    private void validateDate(LocalDate date) {
+        if (date.isBefore(LocalDate.now())) {
+            throw new InvalidTimeException("Date cannot be in the past", "date");
+        }
+    }
+
     private void validateTimeWindow(java.time.LocalTime startTime, java.time.LocalTime endTime) {
         if (!endTime.isAfter(startTime)) {
-            throw new IllegalArgumentException("End time must be after start time");
+            throw new InvalidTimeException("End time must be after start time", "endTime");
+        }
+    }
+
+    private void validateResourceAvailability(
+            LocalTime startTime,
+            LocalTime endTime,
+            LocalTime availableFrom,
+            LocalTime availableTo
+    ) {
+        if (availableFrom == null || availableTo == null || !availableTo.isAfter(availableFrom)) {
+            throw new InvalidTimeException(
+                    "Resource available time is not configured for this resource.",
+                    "resourceId"
+            );
+        }
+
+        if (startTime.isBefore(availableFrom)) {
+            throw new InvalidTimeException(
+                    "Start time must be within resource available time.",
+                    "startTime"
+            );
+        }
+
+        if (endTime.isAfter(availableTo)) {
+            throw new InvalidTimeException(
+                    "End time must be within resource available time.",
+                    "endTime"
+            );
+        }
+    }
+
+    private void validateCapacity(Integer attendees, Integer capacity) {
+        if (capacity == null || capacity < 1) {
+            throw new CapacityExceededException(
+                    "Resource capacity is not configured for this resource.",
+                    "resourceId"
+            );
+        }
+
+        if (attendees > capacity) {
+            throw new CapacityExceededException(
+                    "Number of attendees exceeds resource capacity (Max: " + capacity + ").",
+                    "attendees"
+            );
         }
     }
 

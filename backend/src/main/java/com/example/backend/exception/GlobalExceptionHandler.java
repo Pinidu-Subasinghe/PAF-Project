@@ -55,12 +55,30 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
-        String message = Optional.ofNullable(ex.getBindingResult().getFieldErrors())
+        FieldError fieldError = Optional.ofNullable(ex.getBindingResult().getFieldErrors())
                 .flatMap(errors -> errors.stream().findFirst())
-                .map(FieldError::getDefaultMessage)
-                .orElse("Validation failed");
+                .orElse(null);
 
-        return buildResponse(HttpStatus.BAD_REQUEST, message, request);
+        String message = fieldError != null ? fieldError.getDefaultMessage() : "Validation failed";
+        String field = fieldError != null ? fieldError.getField() : null;
+
+        return buildResponse(HttpStatus.BAD_REQUEST, message, field, request);
+    }
+
+    @ExceptionHandler(CapacityExceededException.class)
+    public ResponseEntity<ApiError> handleCapacityExceeded(
+            CapacityExceededException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getField(), request);
+    }
+
+    @ExceptionHandler(InvalidTimeException.class)
+    public ResponseEntity<ApiError> handleInvalidTime(
+            InvalidTimeException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getField(), request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -148,12 +166,22 @@ public class GlobalExceptionHandler {
             String message,
             HttpServletRequest request
     ) {
+        return buildResponse(status, message, null, request);
+    }
+
+    private ResponseEntity<ApiError> buildResponse(
+            HttpStatus status,
+            String message,
+            String field,
+            HttpServletRequest request
+    ) {
         ApiError error = new ApiError(
                 Instant.now(),
                 status.value(),
                 status.getReasonPhrase(),
                 message,
-                request.getRequestURI()
+                request.getRequestURI(),
+                field
         );
 
         return ResponseEntity.status(status).body(error);
