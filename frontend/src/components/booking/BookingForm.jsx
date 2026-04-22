@@ -23,7 +23,13 @@ export default function BookingForm({ resourceId }) {
   const handleChange = (event) => {
     const { name, value } = event.target
     setForm((current) => ({ ...current, [name]: value }))
-    setFieldErrors((current) => ({ ...current, [name]: '' }))
+    setFieldErrors((current) => {
+      const next = { ...current, [name]: '' }
+      if (name === 'startTime' || name === 'endTime') {
+        next.time = ''
+      }
+      return next
+    })
   }
 
   const validate = () => {
@@ -66,6 +72,7 @@ export default function BookingForm({ resourceId }) {
 
   const mapServerErrorToField = (message) => {
     const normalized = message.toLowerCase()
+    if (normalized.includes('already booked')) return { field: 'time', message }
     if (normalized.includes('purpose')) return { field: 'purpose', message }
     if (normalized.includes('attendees')) return { field: 'attendees', message }
     if (normalized.includes('start time')) return { field: 'startTime', message }
@@ -119,11 +126,25 @@ export default function BookingForm({ resourceId }) {
           : null
 
       if (field) {
-        setFieldErrors((current) => ({ ...current, [field]: message }))
+        if (field === 'time') {
+          setFieldErrors((current) => ({
+            ...current,
+            time: message,
+          }))
+        } else {
+          setFieldErrors((current) => ({ ...current, [field]: message }))
+        }
       } else {
         const mapped = mapServerErrorToField(message)
         if (mapped) {
-          setFieldErrors((current) => ({ ...current, [mapped.field]: mapped.message }))
+          if (mapped.field === 'time') {
+            setFieldErrors((current) => ({
+              ...current,
+              time: mapped.message,
+            }))
+          } else {
+            setFieldErrors((current) => ({ ...current, [mapped.field]: mapped.message }))
+          }
         } else {
           setErrorMessage(message)
         }
@@ -189,7 +210,7 @@ export default function BookingForm({ resourceId }) {
               value={form.startTime}
               onChange={handleChange}
               required
-              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.startTime ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
+              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.startTime || fieldErrors.time ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
             />
             {fieldErrors.startTime && <span className="text-red-500 text-sm mt-1">{fieldErrors.startTime}</span>}
           </label>
@@ -202,11 +223,13 @@ export default function BookingForm({ resourceId }) {
               value={form.endTime}
               onChange={handleChange}
               required
-              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.endTime ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
+              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.endTime || fieldErrors.time ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
             />
             {fieldErrors.endTime && <span className="text-red-500 text-sm mt-1">{fieldErrors.endTime}</span>}
           </label>
         </div>
+
+        {fieldErrors.time && <p className="text-red-500 text-sm mt-1">{fieldErrors.time}</p>}
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Purpose
