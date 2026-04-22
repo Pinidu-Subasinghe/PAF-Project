@@ -1,6 +1,8 @@
 package com.example.backend.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -74,7 +76,23 @@ public class GlobalExceptionHandler {
             DataIntegrityViolationException ex,
             HttpServletRequest request
     ) {
-        return buildResponse(HttpStatus.CONFLICT, "Request conflicts with existing data", request);
+                return buildResponse(HttpStatus.BAD_REQUEST, "Invalid data for this request", request);
+        }
+
+        @ExceptionHandler(DataAccessException.class)
+        public ResponseEntity<ApiError> handleDataAccess(
+                        DataAccessException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.BAD_REQUEST, "Invalid data for this request", request);
+        }
+
+        @ExceptionHandler(ConstraintViolationException.class)
+        public ResponseEntity<ApiError> handleConstraintViolation(
+                        ConstraintViolationException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed", request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -96,6 +114,14 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(ResourceNotFoundException.class)
         public ResponseEntity<ApiError> handleResourceNotFound(
                         ResourceNotFoundException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        }
+
+        @ExceptionHandler(BookingNotFoundException.class)
+        public ResponseEntity<ApiError> handleBookingNotFound(
+                        BookingNotFoundException ex,
                         HttpServletRequest request
         ) {
                 return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);

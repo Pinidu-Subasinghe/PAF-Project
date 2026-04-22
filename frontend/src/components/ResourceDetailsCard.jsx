@@ -71,6 +71,11 @@ export default function ResourceDetailsCard() {
     window.dispatchEvent(new Event('popstate'))
   }
 
+  const handleBookNow = () => {
+    window.history.pushState(null, '', `/bookings/create/${resource.id}`)
+    window.dispatchEvent(new Event('popstate'))
+  }
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
@@ -253,6 +258,7 @@ export default function ResourceDetailsCard() {
             session && session.role === 'USER' ? (
               <button 
                 type="button"
+                onClick={handleBookNow}
                 className="inline-flex items-center justify-center rounded-full bg-teal-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-teal-500/20 transition-all hover:bg-teal-700 hover:shadow-lg hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 disabled:opacity-50 disabled:pointer-events-none"
                 disabled={!isActive}
               >
