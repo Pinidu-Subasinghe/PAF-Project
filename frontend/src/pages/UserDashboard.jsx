@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import DashboardShell from '../components/DashboardShell'
 import Profile from '../components/user/Profile'
 import ChangePassword from '../components/user/ChangePassword'
+import BookingList from '../components/booking/BookingList'
 import { authSessionChangeEvent, readAuthSession } from '../utils/authSession'
 import { userNavItems, adminNavItems } from '../utils/dashboardNav'
 
@@ -109,14 +110,13 @@ export default function UserDashboard() {
 		profile: <Profile session={session} />,
 		'change-password': <ChangePassword session={session} />,
 		'my-bookings': (
-			<PlaceholderPanel
-				title="My bookings"
-				description="Review your recent reservations and upcoming space usage."
-				items={[
-					{ title: 'Library study room', detail: 'Tomorrow, 10:00 AM' },
-					{ title: 'Conference hall', detail: 'Friday, 2:00 PM' },
-				]}
-			/>
+			<div className="space-y-4">
+				<div>
+					<h2 className="text-xl font-semibold text-slate-900">My bookings</h2>
+					<p className="mt-1 text-sm text-slate-500">Review your reservation history and current booking statuses.</p>
+				</div>
+				<BookingList scope="my" />
+			</div>
 		),
 		'my-tickets': (
 			<PlaceholderPanel
