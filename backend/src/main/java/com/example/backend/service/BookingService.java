@@ -7,6 +7,7 @@ import com.example.backend.entity.AppUser;
 import com.example.backend.entity.Booking;
 import com.example.backend.entity.Resource;
 import com.example.backend.enums.BookingStatus;
+import com.example.backend.exception.BookingConflictException;
 import com.example.backend.exception.BookingNotFoundException;
 import com.example.backend.exception.CapacityExceededException;
 import com.example.backend.exception.InvalidTimeException;
@@ -54,6 +55,12 @@ public class BookingService {
             resource.getAvailableTo()
         );
         validateCapacity(request.attendees(), resource.getCapacity());
+        validateBookingConflict(
+            request.resourceId(),
+            request.date(),
+            request.startTime(),
+            request.endTime()
+        );
 
         Booking booking = new Booking();
         booking.setResourceId(request.resourceId());
@@ -185,6 +192,30 @@ public class BookingService {
             throw new CapacityExceededException(
                     "Number of attendees exceeds resource capacity (Max: " + capacity + ").",
                     "attendees"
+            );
+        }
+    }
+
+    private void validateBookingConflict(
+            Long resourceId,
+            LocalDate date,
+            LocalTime startTime,
+            LocalTime endTime
+    ) {
+        List<Booking> existingBookings = bookingRepository.findByResourceIdAndDate(resourceId, date);
+
+        boolean hasConflict = existingBookings.stream()
+                .filter(booking -> booking.getStatus() != BookingStatus.CANCELLED)
+                .filter(booking -> booking.getStatus() != BookingStatus.REJECTED)
+                .anyMatch(booking ->
+                        booking.getStartTime().isBefore(endTime)
+                                && booking.getEndTime().isAfter(startTime)
+                );
+
+        if (hasConflict) {
+            throw new BookingConflictException(
+                    "This resource is already booked for the selected time range.",
+                    "time"
             );
         }
     }
