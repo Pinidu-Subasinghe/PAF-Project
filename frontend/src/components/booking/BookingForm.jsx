@@ -18,6 +18,7 @@ export default function BookingForm({ resourceId }) {
   const [fieldErrors, setFieldErrors] = useState({})
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const todayIso = new Date().toISOString().split('T')[0]
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -30,6 +31,8 @@ export default function BookingForm({ resourceId }) {
 
     if (!form.date) {
       errors.date = 'Date is required.'
+    } else if (form.date < todayIso) {
+      errors.date = 'Date cannot be in the past.'
     }
 
     if (!form.startTime) {
@@ -57,6 +60,9 @@ export default function BookingForm({ resourceId }) {
 
     return errors
   }
+
+  const formValidationErrors = validate()
+  const isFormValid = Object.keys(formValidationErrors).length === 0
 
   const mapServerErrorToField = (message) => {
     const normalized = message.toLowerCase()
@@ -103,11 +109,24 @@ export default function BookingForm({ resourceId }) {
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to create booking right now.'
-      const mapped = mapServerErrorToField(message)
-      if (mapped) {
-        setFieldErrors((current) => ({ ...current, [mapped.field]: mapped.message }))
+      const field =
+        error &&
+        typeof error === 'object' &&
+        'field' in error &&
+        typeof error.field === 'string' &&
+        error.field.trim()
+          ? error.field
+          : null
+
+      if (field) {
+        setFieldErrors((current) => ({ ...current, [field]: message }))
       } else {
-        setErrorMessage(message)
+        const mapped = mapServerErrorToField(message)
+        if (mapped) {
+          setFieldErrors((current) => ({ ...current, [mapped.field]: mapped.message }))
+        } else {
+          setErrorMessage(message)
+        }
       }
     } finally {
       setIsSubmitting(false)
@@ -129,7 +148,7 @@ export default function BookingForm({ resourceId }) {
             readOnly
             className={`rounded-xl border px-4 py-2.5 text-slate-700 ${fieldErrors.resourceId ? 'border-rose-400 bg-rose-50' : 'border-slate-300 bg-slate-100'}`}
           />
-          {fieldErrors.resourceId && <span className="text-xs font-medium text-rose-700">{fieldErrors.resourceId}</span>}
+          {fieldErrors.resourceId && <span className="text-red-500 text-sm mt-1">{fieldErrors.resourceId}</span>}
         </label>
 
         <div className="grid gap-5 md:grid-cols-2">
@@ -143,7 +162,7 @@ export default function BookingForm({ resourceId }) {
               required
               className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.date ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
             />
-            {fieldErrors.date && <span className="text-xs font-medium text-rose-700">{fieldErrors.date}</span>}
+            {fieldErrors.date && <span className="text-red-500 text-sm mt-1">{fieldErrors.date}</span>}
           </label>
 
           <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -157,7 +176,7 @@ export default function BookingForm({ resourceId }) {
               required
               className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.attendees ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
             />
-            {fieldErrors.attendees && <span className="text-xs font-medium text-rose-700">{fieldErrors.attendees}</span>}
+            {fieldErrors.attendees && <span className="text-red-500 text-sm mt-1">{fieldErrors.attendees}</span>}
           </label>
         </div>
 
@@ -172,7 +191,7 @@ export default function BookingForm({ resourceId }) {
               required
               className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.startTime ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
             />
-            {fieldErrors.startTime && <span className="text-xs font-medium text-rose-700">{fieldErrors.startTime}</span>}
+            {fieldErrors.startTime && <span className="text-red-500 text-sm mt-1">{fieldErrors.startTime}</span>}
           </label>
 
           <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -185,7 +204,7 @@ export default function BookingForm({ resourceId }) {
               required
               className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.endTime ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
             />
-            {fieldErrors.endTime && <span className="text-xs font-medium text-rose-700">{fieldErrors.endTime}</span>}
+            {fieldErrors.endTime && <span className="text-red-500 text-sm mt-1">{fieldErrors.endTime}</span>}
           </label>
         </div>
 
@@ -200,7 +219,7 @@ export default function BookingForm({ resourceId }) {
             maxLength={500}
             className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.purpose ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
           />
-          {fieldErrors.purpose && <span className="text-xs font-medium text-rose-700">{fieldErrors.purpose}</span>}
+          {fieldErrors.purpose && <span className="text-red-500 text-sm mt-1">{fieldErrors.purpose}</span>}
         </label>
 
         {errorMessage && (
@@ -214,7 +233,7 @@ export default function BookingForm({ resourceId }) {
         <div className="flex flex-wrap items-center gap-3 pt-2">
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isFormValid}
             className="inline-flex items-center justify-center rounded-full bg-teal-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Booking'}
