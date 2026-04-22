@@ -4,6 +4,7 @@ import com.example.backend.dto.response.NotificationResponse;
 import com.example.backend.entity.AppUser;
 import com.example.backend.entity.Notification;
 import com.example.backend.enums.NotificationType;
+import com.example.backend.enums.Role;
 import com.example.backend.exception.NotificationNotFoundException;
 import com.example.backend.exception.UserNotFoundException;
 import com.example.backend.repository.NotificationRepository;
@@ -121,6 +122,51 @@ public class NotificationService {
     @Transactional
     public void deleteAllByUserId(Long userId) {
         notificationRepository.deleteByUserId(userId);
+    }
+
+    @Transactional
+    public void createNotificationForUserId(
+            Long userId,
+            NotificationType type,
+            String title,
+            String message,
+            String actionTarget
+    ) {
+        if (userId == null) return;
+
+        userRepository.findById(userId).ifPresent(user -> {
+            Notification notification = new Notification();
+            notification.setUser(user);
+            notification.setType(type);
+            notification.setTitle(title);
+            notification.setMessage(message);
+            notification.setActionTarget(actionTarget);
+            notificationRepository.save(notification);
+        });
+    }
+
+    @Transactional
+    public void createNotificationsForRole(
+            Role role,
+            NotificationType type,
+            String title,
+            String message,
+            String actionTarget
+    ) {
+        if (role == null) return;
+
+        java.util.List<AppUser> users = userRepository.findByRole(role);
+        if (users == null || users.isEmpty()) return;
+
+        for (AppUser user : users) {
+            Notification notification = new Notification();
+            notification.setUser(user);
+            notification.setType(type);
+            notification.setTitle(title);
+            notification.setMessage(message);
+            notification.setActionTarget(actionTarget);
+            notificationRepository.save(notification);
+        }
     }
 
     // resource-added notifications intentionally removed; use frontend toast notifications

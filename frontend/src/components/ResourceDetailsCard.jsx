@@ -72,7 +72,7 @@ export default function ResourceDetailsCard() {
   }
 
   const handleBookNow = () => {
-    window.history.pushState(null, '', `/bookings/create/${resource.id}`)
+    window.history.pushState(null, '', `/resources/${resource.id}/book-now`)
     window.dispatchEvent(new Event('popstate'))
   }
 

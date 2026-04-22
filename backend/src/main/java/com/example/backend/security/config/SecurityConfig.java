@@ -61,6 +61,9 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/api/v1/uploads/resources/**").hasRole("ADMIN")
                     // booking endpoints: only users can create bookings
                     .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("USER")
+                    // admin-only booking management (approve/reject, list all)
+                    .requestMatchers(HttpMethod.PUT, "/api/bookings/*/approve", "/api/bookings/*/reject").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/bookings").hasRole("ADMIN")
                     // public resource reads
                     .requestMatchers(HttpMethod.GET, "/api/v1/resources", "/api/v1/resources/**").permitAll()
                     .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()

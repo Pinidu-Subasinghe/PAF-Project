@@ -7,6 +7,8 @@ import com.example.backend.entity.AppUser;
 import com.example.backend.entity.Booking;
 import com.example.backend.entity.Resource;
 import com.example.backend.enums.BookingStatus;
+import com.example.backend.enums.NotificationType;
+import com.example.backend.enums.Role;
 import com.example.backend.exception.BookingConflictException;
 import com.example.backend.exception.BookingNotFoundException;
 import com.example.backend.exception.CapacityExceededException;
@@ -16,6 +18,7 @@ import com.example.backend.exception.UserNotFoundException;
 import com.example.backend.repository.BookingRepository;
 import com.example.backend.repository.ResourceRepository;
 import com.example.backend.repository.UserRepository;
+import com.example.backend.service.NotificationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,15 +32,18 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
+    private final NotificationService notificationService;
 
     public BookingService(
             BookingRepository bookingRepository,
             UserRepository userRepository,
-            ResourceRepository resourceRepository
+            ResourceRepository resourceRepository,
+            NotificationService notificationService
     ) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -72,7 +78,28 @@ public class BookingService {
         booking.setAttendees(request.attendees());
         booking.setStatus(BookingStatus.PENDING);
 
-        return toResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        // notify admins about new booking request
+        String title = "New booking request";
+        String message = String.format(
+            "New booking request for resource %s on %s (%s-%s) by %s",
+            resource.getName(),
+            request.date(),
+            request.startTime(),
+            request.endTime(),
+            user.getFullName() != null ? user.getFullName() : user.getEmail()
+        );
+
+        notificationService.createNotificationsForRole(
+            Role.ADMIN,
+            NotificationType.BOOKING_REQUEST,
+            title,
+            message,
+            "manage-bookings"
+        );
+
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -94,35 +121,118 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse approveBooking(Long bookingId) {
+    public BookingResponse approveBooking(Long bookingId, String adminEmail) {
         Booking booking = findBooking(bookingId);
         ensurePendingForDecision(booking, "approve");
 
         booking.setStatus(BookingStatus.APPROVED);
         booking.setRejectionReason(null);
-        return toResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        // notify booking owner
+        AppUser admin = findUserByEmail(adminEmail);
+        String title = "Your booking has been approved";
+        String message = String.format(
+                "Your booking has been approved by %s",
+                admin.getFullName() != null ? admin.getFullName() : admin.getEmail()
+        );
+
+        notificationService.createNotificationForUserId(
+                booking.getUserId(),
+                NotificationType.BOOKING_DECISION,
+                title,
+                message,
+                "my-bookings"
+        );
+
+        return toResponse(saved);
     }
 
     @Transactional
-    public BookingResponse rejectBooking(Long bookingId, BookingRejectRequest request) {
+    public BookingResponse rejectBooking(Long bookingId, BookingRejectRequest request, String adminEmail) {
         Booking booking = findBooking(bookingId);
         ensurePendingForDecision(booking, "reject");
 
         booking.setStatus(BookingStatus.REJECTED);
         booking.setRejectionReason(request.reason().trim());
-        return toResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        AppUser admin = findUserByEmail(adminEmail);
+        String title = "Your booking has been rejected";
+        String message = String.format(
+                "Your booking has been rejected by %s",
+                admin.getFullName() != null ? admin.getFullName() : admin.getEmail()
+        );
+
+        notificationService.createNotificationForUserId(
+                booking.getUserId(),
+                NotificationType.BOOKING_DECISION,
+                title,
+                message,
+                "my-bookings"
+        );
+
+        return toResponse(saved);
     }
 
     @Transactional
-    public BookingResponse cancelBooking(Long bookingId) {
+    public BookingResponse cancelBooking(Long bookingId, String actorEmail) {
         Booking booking = findBooking(bookingId);
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new IllegalArgumentException("Booking is already cancelled");
         }
 
+        AppUser actor = findUserByEmail(actorEmail);
+
+        // if user cancels, ensure they own the booking
+        if (actor.getRole() != Role.ADMIN) {
+            if (!booking.getUserId().equals(actor.getId())) {
+                throw new UserNotFoundException("User not authorized to cancel this booking");
+            }
+
+            booking.setStatus(BookingStatus.CANCELLED);
+            Booking saved = bookingRepository.save(booking);
+
+            // notify admins that user cancelled
+            String title = "Booking canceled by user";
+            String message = String.format(
+                    "Booking for resource id %d was canceled by %s",
+                    booking.getResourceId(),
+                    actor.getFullName() != null ? actor.getFullName() : actor.getEmail()
+            );
+
+            notificationService.createNotificationsForRole(
+                    Role.ADMIN,
+                    NotificationType.BOOKING_CANCELLED,
+                    title,
+                    message,
+                    "manage-bookings"
+            );
+
+            return toResponse(saved);
+        }
+
+        // admin cancellation
         booking.setStatus(BookingStatus.CANCELLED);
-        return toResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        AppUser admin = actor;
+        String title = "Your booking has been canceled";
+        String message = String.format(
+                "Your booking has been canceled by %s",
+                admin.getFullName() != null ? admin.getFullName() : admin.getEmail()
+        );
+
+        notificationService.createNotificationForUserId(
+                booking.getUserId(),
+                NotificationType.BOOKING_CANCELLED,
+                title,
+                message,
+                "my-bookings"
+        );
+
+        return toResponse(saved);
     }
 
     private AppUser findUserByEmail(String userEmail) {

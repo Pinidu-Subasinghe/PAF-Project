@@ -96,7 +96,7 @@ function App() {
   const isAboutUsPage = currentPath.startsWith('/about-us')
   const isResourceDetailsPage = currentPath.startsWith('/resources/') && currentPath.length > '/resources/'.length
   const isResourcesPage = currentPath.startsWith('/resources') && !isResourceDetailsPage
-  const isBookingCreatePage = /^\/bookings\/create\/\d+$/.test(currentPath)
+  const isBookingCreatePage = /^\/bookings\/create\/\d+$/.test(currentPath) || /^\/resources\/\d+\/book-now$/.test(currentPath)
   const isMyBookingsPage = currentPath.startsWith('/bookings/my')
   const isAllBookingsPage = currentPath.startsWith('/bookings/all')
 
