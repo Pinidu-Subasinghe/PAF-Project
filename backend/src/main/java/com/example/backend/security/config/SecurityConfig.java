@@ -64,6 +64,16 @@ public class SecurityConfig {
                     // admin-only booking management (approve/reject, list all)
                     .requestMatchers(HttpMethod.PUT, "/api/bookings/*/approve", "/api/bookings/*/reject").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.GET, "/api/bookings").hasRole("ADMIN")
+                    // incident ticket endpoints
+                    .requestMatchers(HttpMethod.POST, "/api/v1/tickets").hasAnyRole("USER", "ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/tickets/my").authenticated()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/tickets").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/tickets/*").authenticated()
+                    .requestMatchers(HttpMethod.PUT, "/api/v1/tickets/*/assign", "/api/v1/tickets/*/reject", "/api/v1/tickets/*/resolve").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/v1/tickets/*/close").hasRole("USER")
+                    .requestMatchers(HttpMethod.POST, "/api/v1/tickets/*/comments").authenticated()
+                    .requestMatchers(HttpMethod.PUT, "/api/v1/tickets/comments/*").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/comments/*").authenticated()
                     // public resource reads
                     .requestMatchers(HttpMethod.GET, "/api/v1/resources", "/api/v1/resources/**").permitAll()
                     .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
