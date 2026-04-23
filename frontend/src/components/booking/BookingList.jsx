@@ -477,6 +477,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                 const badgeClass = statusBadgeClasses[booking.status] ?? 'bg-slate-100 text-slate-700'
                 const canModerate = isAllScope && booking.status === 'PENDING'
                 const canCancel = booking.status !== 'CANCELLED'
+                const isClearDisabled = isAllScope && booking.status === 'PENDING'
 
                 return (
                   <tr key={booking.id}>
@@ -532,14 +533,25 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                         )}
 
                         {isAllScope && canCancel && (
-                          <button
-                            type="button"
-                            disabled={isActionLoading}
-                            onClick={() => handleCancel(booking.id)}
-                            className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Clear
-                          </button>
+                          <div className="relative group">
+                            <button
+                              type="button"
+                              disabled={isActionLoading || isClearDisabled}
+                              onClick={() => !isClearDisabled && handleCancel(booking.id)}
+                              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                                isClearDisabled
+                                  ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
+                                  : 'border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60'
+                              }`}
+                            >
+                              Clear
+                            </button>
+                            {isClearDisabled && (
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                Cannot clear pending bookings
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     </td>
