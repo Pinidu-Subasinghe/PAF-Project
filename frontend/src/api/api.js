@@ -232,3 +232,33 @@ export async function cancelBooking(bookingId) {
     headers: getAuthHeader(),
   })
 }
+
+// Admin user management
+export async function getAdminUsers() {
+  return request('/api/v1/admin/users', {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function createAdminUser(payload) {
+  return request('/api/v1/admin/users', {
+    method: 'POST',
+    body: payload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function deleteAdminUser(userId) {
+  return request(`/api/v1/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: getAuthHeader(),
+  })
+}
+
+export async function updateAdminUserRole(userId, payload) {
+  return request(`/api/v1/admin/users/${userId}/role`, {
+    method: 'PUT',
+    body: payload,
+    headers: getAuthHeader(),
+  })
+}
