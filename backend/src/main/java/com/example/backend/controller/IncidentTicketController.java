@@ -64,6 +64,15 @@ public class IncidentTicketController {
         return ResponseEntity.ok(ticketService.getAllTickets(status));
     }
 
+    @GetMapping("/assigned")
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public ResponseEntity<List<IncidentTicketResponse>> getAssignedTickets(
+            @RequestParam(required = false) IncidentTicketStatus status,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(ticketService.getAssignedTickets(requireEmail(authentication), status));
+    }
+
     @GetMapping("/{ticketId}")
     public ResponseEntity<IncidentTicketResponse> getTicket(
             @PathVariable Long ticketId,
@@ -93,7 +102,7 @@ public class IncidentTicketController {
     }
 
     @PutMapping("/{ticketId}/resolve")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
     public ResponseEntity<IncidentTicketResponse> resolveTicket(
             @PathVariable Long ticketId,
             @Valid @RequestBody IncidentTicketResolveRequest request,
@@ -108,6 +117,16 @@ public class IncidentTicketController {
             Authentication authentication
     ) {
         return ResponseEntity.ok(ticketService.closeTicket(ticketId, requireEmail(authentication)));
+    }
+
+    @DeleteMapping("/{ticketId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> deleteTicket(
+            @PathVariable Long ticketId,
+            Authentication authentication
+    ) {
+        ticketService.deleteTicket(ticketId, requireEmail(authentication));
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{ticketId}/comments")

@@ -112,6 +112,19 @@ public class IncidentTicketService {
                 .toList();
     }
 
+            @Transactional(readOnly = true)
+            public List<IncidentTicketResponse> getAssignedTickets(String actorEmail, IncidentTicketStatus status) {
+            AppUser actor = findUserByEmail(actorEmail);
+
+            List<IncidentTicket> tickets = status == null
+                ? ticketRepository.findByAssignedToUserIdOrderByCreatedAtDesc(actor.getId())
+                : ticketRepository.findByAssignedToUserIdAndStatusOrderByCreatedAtDesc(actor.getId(), status);
+
+            return tickets.stream()
+                .map(ticket -> toResponse(ticket, actor))
+                .toList();
+            }
+
     @Transactional(readOnly = true)
     public IncidentTicketResponse getTicket(Long ticketId, String actorEmail) {
         AppUser actor = findUserByEmail(actorEmail);
@@ -188,6 +201,33 @@ public class IncidentTicketService {
         ticket.setClosedAt(Instant.now());
         IncidentTicket saved = ticketRepository.save(ticket);
         return toResponse(saved, actor);
+    }
+
+    @Transactional
+    public void deleteTicket(Long ticketId, String actorEmail) {
+        AppUser actor = findUserByEmail(actorEmail);
+        IncidentTicket ticket = findTicket(ticketId);
+
+        if (actor.getRole() != Role.USER) {
+            throw new IncidentTicketValidationException("Only normal users can permanently delete tickets");
+        }
+
+        if (!ticket.getUserId().equals(actor.getId())) {
+            throw new IncidentTicketValidationException("Only the ticket owner can delete this ticket");
+        }
+
+        IncidentTicketStatus status = ticket.getStatus();
+        boolean canDelete = status == IncidentTicketStatus.OPEN
+                || status == IncidentTicketStatus.RESOLVED
+                || status == IncidentTicketStatus.REJECTED
+                || status == IncidentTicketStatus.CLOSED;
+
+        if (!canDelete) {
+            throw new IncidentTicketValidationException("Ticket cannot be deleted while it is in progress");
+        }
+
+        ticket.getAttachments().forEach(attachment -> cloudinaryStorageService.deleteByPublicId(attachment.getPublicId()));
+        ticketRepository.delete(ticket);
     }
 
     @Transactional
