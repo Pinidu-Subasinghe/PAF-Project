@@ -51,6 +51,12 @@ public class Booking {
     @Column(name = "rejection_reason", length = 500)
     private String rejectionReason;
 
+    @Column(name = "deleted_for_user", nullable = false)
+    private boolean deletedForUser;
+
+    @Column(name = "deleted_for_admin", nullable = false)
+    private boolean deletedForAdmin;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -59,6 +65,9 @@ public class Booking {
         if (status == null) {
             status = BookingStatus.PENDING;
         }
+
+        deletedForUser = false;
+        deletedForAdmin = false;
 
         createdAt = Instant.now();
     }
@@ -141,6 +150,22 @@ public class Booking {
 
     public void setRejectionReason(String rejectionReason) {
         this.rejectionReason = rejectionReason;
+    }
+
+    public boolean isDeletedForUser() {
+        return deletedForUser;
+    }
+
+    public void setDeletedForUser(boolean deletedForUser) {
+        this.deletedForUser = deletedForUser;
+    }
+
+    public boolean isDeletedForAdmin() {
+        return deletedForAdmin;
+    }
+
+    public void setDeletedForAdmin(boolean deletedForAdmin) {
+        this.deletedForAdmin = deletedForAdmin;
     }
 
     public Instant getCreatedAt() {
