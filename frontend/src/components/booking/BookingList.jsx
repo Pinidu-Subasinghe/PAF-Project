@@ -142,6 +142,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     try {
       await approveBooking(bookingId)
       await loadBookings()
+      closeBookingModal()
       await Swal.fire({
         title: 'Approved',
         text: 'Booking was approved successfully.',
@@ -195,6 +196,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     try {
       await rejectBooking(bookingId, reason)
       await loadBookings()
+      closeBookingModal()
       await Swal.fire({
         title: 'Rejected',
         text: 'Booking was rejected successfully.',
@@ -215,6 +217,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     try {
       await cancelBooking(bookingId)
       await loadBookings()
+      closeBookingModal()
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to cancel booking.')
     } finally {
@@ -466,8 +469,6 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                 <th className="px-4 py-3 font-semibold">Resource</th>
                 <th className="px-4 py-3 font-semibold">Resource Type</th>
                 <th className="px-4 py-3 font-semibold">Date &amp; Time</th>
-                {isAllScope && <th className="px-4 py-3 font-semibold">Purpose</th>}
-                <th className="px-4 py-3 font-semibold">Attendees</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Actions</th>
               </tr>
@@ -475,9 +476,6 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
             <tbody className="divide-y divide-slate-100 bg-white">
               {sortedBookings.map((booking) => {
                 const badgeClass = statusBadgeClasses[booking.status] ?? 'bg-slate-100 text-slate-700'
-                const canModerate = isAllScope && booking.status === 'PENDING'
-                const canCancel = booking.status !== 'CANCELLED'
-                const isClearDisabled = isAllScope && booking.status === 'PENDING'
 
                 return (
                   <tr key={booking.id}>
@@ -485,75 +483,19 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                     <td className="px-4 py-3 text-slate-700">{booking.resourceName}</td>
                     <td className="px-4 py-3 text-slate-700">{booking.resourceType}</td>
                     <td className="px-4 py-3 text-slate-700">{formatDateTime(booking.date, booking.startTime, booking.endTime)}</td>
-                    {isAllScope && (
-                      <td className="px-4 py-3 text-slate-700">
-                        <p className="max-w-xs">{booking.purpose}</p>
-                        {booking.rejectionReason && (
-                          <p className="mt-1 text-xs text-rose-700">Reason: {booking.rejectionReason}</p>
-                        )}
-                      </td>
-                    )}
-                    <td className="px-4 py-3 text-slate-700">{booking.attendees}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>
                         {formatStatus(booking.status)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        {!isAllScope && (
-                          <button
-                            type="button"
-                            onClick={() => openBookingModal(booking)}
-                            className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-teal-300 hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            <span aria-hidden="true">View</span>
-                          </button>
-                        )}
-
-                        {isAllScope && canModerate && (
-                          <>
-                            <button
-                              type="button"
-                              disabled={isActionLoading}
-                              onClick={() => handleApprove(booking.id)}
-                              className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              type="button"
-                              disabled={isActionLoading}
-                              onClick={() => handleReject(booking.id)}
-                              className="rounded-full bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-
-                        {isAllScope && canCancel && (
-                          <div className="relative group">
-                            <button
-                              type="button"
-                              disabled={isActionLoading || isClearDisabled}
-                              onClick={() => !isClearDisabled && handleCancel(booking.id)}
-                              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                                isClearDisabled
-                                  ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
-                                  : 'border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60'
-                              }`}
-                            >
-                              Clear
-                            </button>
-                            {isClearDisabled && (
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                Cannot clear pending bookings
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openBookingModal(booking)}
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <span aria-hidden="true">View</span>
+                      </button>
                     </td>
                   </tr>
                 )
@@ -563,7 +505,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
         </div>
       )}
 
-      {selectedBooking && !isAllScope && (
+      {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-2xl rounded-4xl border border-teal-100 bg-white p-8 shadow-xl shadow-teal-900/5 md:p-10">
             <div className="flex flex-col justify-between gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-start">
@@ -801,35 +743,84 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                 </>
               ) : (
                 <>
-                  {selectedBooking.status === 'PENDING' && (
-                    <button
-                      type="button"
-                      onClick={handleStartEdit}
-                      className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                    >
-                      Update
-                    </button>
-                  )}
+                  {isAllScope ? (
+                    // Admin buttons
+                    <>
+                      {selectedBooking.status === 'PENDING' && (
+                        <>
+                          <button
+                            type="button"
+                            disabled={isActionLoading}
+                            onClick={() => handleApprove(selectedBooking.id)}
+                            className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isActionLoading}
+                            onClick={() => handleReject(selectedBooking.id)}
+                            className="rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
 
-                  {selectedBooking.status === 'PENDING' && (
-                    <button
-                      type="button"
-                      disabled={isActionLoading}
-                      onClick={handleDeleteFromModal}
-                      className="rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isActionLoading ? 'Deleting...' : 'Delete'}
-                    </button>
-                  )}
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          disabled={isActionLoading || selectedBooking.status === 'PENDING'}
+                          onClick={() => selectedBooking.status !== 'PENDING' && handleCancel(selectedBooking.id)}
+                          className={`rounded-full border px-5 py-2.5 text-sm font-semibold transition ${
+                            selectedBooking.status === 'PENDING'
+                              ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
+                              : 'border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60'
+                          }`}
+                        >
+                          Clear
+                        </button>
+                        {selectedBooking.status === 'PENDING' && (
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                            Cannot clear pending bookings
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    // User buttons
+                    <>
+                      {selectedBooking.status === 'PENDING' && (
+                        <button
+                          type="button"
+                          onClick={handleStartEdit}
+                          className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                        >
+                          Update
+                        </button>
+                      )}
 
-                  {(selectedBooking.status === 'APPROVED' || selectedBooking.status === 'REJECTED') && (
-                    <button
-                      type="button"
-                      onClick={() => navigateToTicket(selectedBooking.id)}
-                      className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700"
-                    >
-                      Raise Ticket
-                    </button>
+                      {selectedBooking.status === 'PENDING' && (
+                        <button
+                          type="button"
+                          disabled={isActionLoading}
+                          onClick={handleDeleteFromModal}
+                          className="rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isActionLoading ? 'Deleting...' : 'Delete'}
+                        </button>
+                      )}
+
+                      {(selectedBooking.status === 'APPROVED' || selectedBooking.status === 'REJECTED') && (
+                        <button
+                          type="button"
+                          onClick={() => navigateToTicket(selectedBooking.id)}
+                          className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700"
+                        >
+                          Raise Ticket
+                        </button>
+                      )}
+                    </>
                   )}
 
                   <button
