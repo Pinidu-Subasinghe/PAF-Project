@@ -5,6 +5,7 @@ import ChangePassword from '../components/user/ChangePassword'
 import AdminResourceManagement from '../components/admin/AdminResourceManagement'
 import AdminAddResource from '../components/admin/AdminAddResource'
 import AdminResourceInfoCard from '../components/admin/AdminResourceInfoCard'
+import AdminUserManagement from '../components/admin/AdminUserManagement'
 import BookingList from '../components/booking/BookingList'
 import { authSessionChangeEvent, readAuthSession } from '../utils/authSession'
 import { adminNavItems } from '../utils/dashboardNav'
@@ -137,6 +138,7 @@ export default function AdminDashboard() {
           />
         )
       : <AdminResourceManagement onSelectResource={handleResourceSelect} />,
+    'user-management': <AdminUserManagement />,
     'manage-bookings': (
       <div className="space-y-4">
         <div>
