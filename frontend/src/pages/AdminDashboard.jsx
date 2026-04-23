@@ -6,6 +6,7 @@ import AdminResourceManagement from '../components/admin/AdminResourceManagement
 import AdminAddResource from '../components/admin/AdminAddResource'
 import AdminResourceInfoCard from '../components/admin/AdminResourceInfoCard'
 import AdminUserManagement from '../components/admin/AdminUserManagement'
+import AdminTickets from '../components/admin/AdminTickets'
 import BookingList from '../components/booking/BookingList'
 import { authSessionChangeEvent, readAuthSession } from '../utils/authSession'
 import { adminNavItems } from '../utils/dashboardNav'
@@ -149,11 +150,7 @@ export default function AdminDashboard() {
       </div>
     ),
     tickets: (
-      <PlaceholderPanel
-        title="Tickets"
-        description="View and manage support tickets across the system."
-        items={[{ title: 'Ticket #42', detail: 'Status: Open' }, { title: 'Ticket #77', detail: 'Status: Closed' }]}
-      />
+      <AdminTickets />
     ),
   }
 
