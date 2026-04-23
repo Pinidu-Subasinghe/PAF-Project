@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -66,9 +67,10 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.rejectBooking(id, request, requireEmail(authentication)));
     }
 
-    @PutMapping("/{id}/cancel")
-    public ResponseEntity<BookingResponse> cancelBooking(@PathVariable Long id, Authentication authentication) {
-        return ResponseEntity.ok(bookingService.cancelBooking(id, requireEmail(authentication)));
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBooking(@PathVariable Long id, Authentication authentication) {
+        bookingService.deleteBooking(id, requireEmail(authentication));
+        return ResponseEntity.noContent().build();
     }
 
     private String requireEmail(Authentication authentication) {

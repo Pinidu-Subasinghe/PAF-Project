@@ -227,8 +227,8 @@ export async function rejectBooking(bookingId, reason) {
 }
 
 export async function cancelBooking(bookingId) {
-  return request(`/api/bookings/${bookingId}/cancel`, {
-    method: 'PUT',
+  return request(`/api/bookings/${bookingId}`, {
+    method: 'DELETE',
     headers: getAuthHeader(),
   })
 }

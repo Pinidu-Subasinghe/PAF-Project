@@ -107,6 +107,7 @@ public class BookingService {
         AppUser user = findUserByEmail(userEmail);
         return bookingRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
                 .stream()
+                .filter(booking -> !booking.isDeletedForUser())
                 .map(this::toResponse)
                 .toList();
     }
@@ -117,7 +118,10 @@ public class BookingService {
                 ? bookingRepository.findAllByOrderByCreatedAtDesc()
                 : bookingRepository.findByStatusOrderByCreatedAtDesc(status);
 
-        return bookings.stream().map(this::toResponse).toList();
+        return bookings.stream()
+            .filter(booking -> !booking.isDeletedForAdmin())
+            .map(this::toResponse)
+            .toList();
     }
 
     @Transactional
@@ -176,31 +180,28 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse cancelBooking(Long bookingId, String actorEmail) {
+    public void deleteBooking(Long bookingId, String actorEmail) {
         Booking booking = findBooking(bookingId);
-
-        if (booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new IllegalArgumentException("Booking is already cancelled");
-        }
 
         AppUser actor = findUserByEmail(actorEmail);
 
-        // if user cancels, ensure they own the booking
+        // If a non-admin deletes a booking, ensure they own it.
         if (actor.getRole() != Role.ADMIN) {
             if (!booking.getUserId().equals(actor.getId())) {
-                throw new UserNotFoundException("User not authorized to cancel this booking");
+                throw new UserNotFoundException("User not authorized to delete this booking");
             }
 
-            booking.setStatus(BookingStatus.CANCELLED);
-            Booking saved = bookingRepository.save(booking);
+            booking.setDeletedForUser(true);
 
-            // notify admins that user cancelled
+            // Notify admins that user cancelled the booking.
             String title = "Booking canceled by user";
             String message = String.format(
-                    "Booking for resource id %d was canceled by %s",
+                "Booking for resource id %d was canceled by %s",
                     booking.getResourceId(),
                     actor.getFullName() != null ? actor.getFullName() : actor.getEmail()
             );
+
+            persistOrDeleteIfHiddenForBoth(booking);
 
             notificationService.createNotificationsForRole(
                     Role.ADMIN,
@@ -209,20 +210,19 @@ public class BookingService {
                     message,
                     "manage-bookings"
             );
-
-            return toResponse(saved);
+            return;
         }
 
-        // admin cancellation
-        booking.setStatus(BookingStatus.CANCELLED);
-        Booking saved = bookingRepository.save(booking);
+        booking.setDeletedForAdmin(true);
 
         AppUser admin = actor;
         String title = "Your booking has been canceled";
         String message = String.format(
-                "Your booking has been canceled by %s",
+            "Your booking has been canceled by %s",
                 admin.getFullName() != null ? admin.getFullName() : admin.getEmail()
         );
+
+        persistOrDeleteIfHiddenForBoth(booking);
 
         notificationService.createNotificationForUserId(
                 booking.getUserId(),
@@ -231,8 +231,15 @@ public class BookingService {
                 message,
                 "my-bookings"
         );
+    }
 
-        return toResponse(saved);
+    private void persistOrDeleteIfHiddenForBoth(Booking booking) {
+        if (booking.isDeletedForUser() && booking.isDeletedForAdmin()) {
+            bookingRepository.delete(booking);
+            return;
+        }
+
+        bookingRepository.save(booking);
     }
 
     private AppUser findUserByEmail(String userEmail) {
