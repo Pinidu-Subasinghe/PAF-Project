@@ -233,6 +233,14 @@ export async function cancelBooking(bookingId) {
   })
 }
 
+export async function updateBooking(bookingId, bookingPayload) {
+  return request(`/api/bookings/${bookingId}`, {
+    method: 'PUT',
+    body: bookingPayload,
+    headers: getAuthHeader(),
+  })
+}
+
 // Admin user management
 export async function getAdminUsers() {
   return request('/api/v1/admin/users', {
