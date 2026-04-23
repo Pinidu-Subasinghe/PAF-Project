@@ -235,10 +235,57 @@ export default function BookingList({ scope = 'my' }) {
 
   const handleEditInputChange = (field, value) => {
     setEditFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear field error when user starts typing
+    setFieldErrors((prev) => ({ ...prev, [field]: '' }))
+  }
+
+  const validateEditForm = () => {
+    const errors = {}
+    const todayIso = new Date().toISOString().split('T')[0]
+
+    if (!editFormData.date) {
+      errors.date = 'Date is required.'
+    } else if (editFormData.date < todayIso) {
+      errors.date = 'Date cannot be in the past.'
+    }
+
+    if (!editFormData.startTime) {
+      errors.startTime = 'Start time is required.'
+    }
+
+    if (!editFormData.endTime) {
+      errors.endTime = 'End time is required.'
+    }
+
+    if (editFormData.startTime && editFormData.endTime && editFormData.endTime <= editFormData.startTime) {
+      errors.endTime = 'End time must be after start time.'
+    }
+
+    if (!editFormData.purpose.trim()) {
+      errors.purpose = 'Purpose is required.'
+    } else if (editFormData.purpose.trim().length > 40) {
+      errors.purpose = 'Purpose must be at most 40 characters.'
+    }
+
+    const attendees = Number(editFormData.attendees)
+    if (!editFormData.attendees) {
+      errors.attendees = 'Expected attendees is required.'
+    } else if (!Number.isFinite(attendees) || attendees < 1) {
+      errors.attendees = 'Attendees must be greater than 0.'
+    }
+
+    return errors
   }
 
   const handleEditSubmit = async () => {
     if (!selectedBooking) return
+
+    // Validate form first
+    const validationErrors = validateEditForm()
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors)
+      return
+    }
 
     setIsActionLoading(true)
     setErrorMessage('')
@@ -578,6 +625,7 @@ export default function BookingList({ scope = 'my' }) {
                     value={editFormData.purpose}
                     onChange={(e) => handleEditInputChange('purpose', e.target.value)}
                     rows={3}
+                    maxLength={40}
                     className={`w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:ring-2 ${
                       fieldErrors.purpose
                         ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200'
