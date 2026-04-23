@@ -28,7 +28,7 @@ function formatDateTime(date, startTime, endTime) {
   return `${date} ${startTime} - ${endTime}`
 }
 
-export default function BookingList({ scope = 'my' }) {
+export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const [bookings, setBookings] = useState([])
   const [statusFilter, setStatusFilter] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -189,14 +189,8 @@ export default function BookingList({ scope = 'my' }) {
     }
   }
 
-  const navigateToTicket = (bookingId) => {
-    const pathname = `/tickets/create?bookingId=${encodeURIComponent(bookingId)}`
-    window.history.pushState(null, '', pathname)
-    window.dispatchEvent(new PopStateEvent('popstate'))
-  }
-
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 md:p-8">
+    <section className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 md:p-8">
       {isAllScope && (
         <div className="mb-5 flex items-center gap-3">
           <label htmlFor="statusFilter" className="text-sm font-medium text-slate-700">Filter by status</label>
@@ -317,7 +311,7 @@ export default function BookingList({ scope = 'my' }) {
 
       {selectedBooking && !isAllScope && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-2xl rounded-[2rem] border border-teal-100 bg-white p-8 shadow-xl shadow-teal-900/5 md:p-10">
+          <div className="w-full max-w-2xl rounded-4xl border border-teal-100 bg-white p-8 shadow-xl shadow-teal-900/5 md:p-10">
             <div className="flex flex-col justify-between gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-start">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">Booking Request</p>
@@ -382,7 +376,19 @@ export default function BookingList({ scope = 'my' }) {
               {(selectedBooking.status === 'APPROVED' || selectedBooking.status === 'REJECTED') && (
                 <button
                   type="button"
-                  onClick={() => navigateToTicket(selectedBooking.id)}
+                  onClick={() => {
+                    const booking = selectedBooking
+                    closeBookingModal()
+
+                    if (typeof onRaiseTicket === 'function') {
+                      onRaiseTicket(booking)
+                      return
+                    }
+
+                    const pathname = `/user-dashboard?tab=my-tickets&bookingId=${encodeURIComponent(booking.id)}`
+                    window.history.pushState(null, '', pathname)
+                    window.dispatchEvent(new PopStateEvent('popstate'))
+                  }}
                   className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700"
                 >
                   Raise Ticket
