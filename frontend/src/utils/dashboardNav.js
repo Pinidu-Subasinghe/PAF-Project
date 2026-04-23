@@ -17,3 +17,9 @@ export const adminNavItems = [
   { id: 'manage-bookings', label: 'Manage bookings', description: 'Review and manage all reservations' },
   { id: 'tickets', label: 'Tickets', description: 'Manage support tickets' },
 ]
+
+export const technicianNavItems = [
+  ...commonNavItems,
+  { id: 'assigned', label: 'Assigned Tasks', description: 'Tickets assigned to you' },
+  { id: 'resolved', label: 'Resolved', description: 'Resolved tickets' },
+]
