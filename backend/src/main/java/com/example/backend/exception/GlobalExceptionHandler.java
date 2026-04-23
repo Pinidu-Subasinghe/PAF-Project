@@ -153,6 +153,30 @@ public class GlobalExceptionHandler {
                 return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
         }
 
+        @ExceptionHandler(IncidentTicketNotFoundException.class)
+        public ResponseEntity<ApiError> handleIncidentTicketNotFound(
+                        IncidentTicketNotFoundException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        }
+
+        @ExceptionHandler(IncidentTicketCommentNotFoundException.class)
+        public ResponseEntity<ApiError> handleIncidentTicketCommentNotFound(
+                        IncidentTicketCommentNotFoundException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        }
+
+        @ExceptionHandler(IncidentTicketValidationException.class)
+        public ResponseEntity<ApiError> handleIncidentTicketValidation(
+                        IncidentTicketValidationException ex,
+                        HttpServletRequest request
+        ) {
+                return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        }
+
         @ExceptionHandler(UserNotFoundException.class)
         public ResponseEntity<ApiError> handleUserNotFound(
                         UserNotFoundException ex,

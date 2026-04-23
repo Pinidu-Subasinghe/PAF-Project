@@ -23,11 +23,26 @@ function navigateTo(pathname) {
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
+function getDashboardHomePath(role) {
+  if (role === 'ADMIN') {
+    return '/admin-dashboard'
+  }
+
+  if (role === 'TECHNICIAN') {
+    return '/technician-dashboard'
+  }
+
+  return '/user-dashboard'
+}
+
 function resolveNotificationDestination(notification, authSession) {
   const target = notification?.actionTarget?.trim()
+  const role = authSession?.role
 
   if (target === 'change-password') {
-    return authSession?.role === 'ADMIN' ? '/admin-dashboard?tab=change-password' : '/user-dashboard?tab=change-password'
+    return role === 'ADMIN'
+      ? '/admin-dashboard?tab=change-password'
+      : getDashboardHomePath(role)
   }
 
   if (target === 'manage-bookings') {
@@ -42,7 +57,7 @@ function resolveNotificationDestination(notification, authSession) {
     return '/admin-dashboard?tab=manage-resources'
   }
 
-  return authSession?.role === 'ADMIN' ? '/admin-dashboard' : '/user-dashboard'
+  return getDashboardHomePath(role)
 }
 
 export default function Header() {
@@ -252,7 +267,7 @@ export default function Header() {
   )
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-300/70 bg-[#f9fcfd]/90 backdrop-blur-md supports-[backdrop-filter]:bg-[#f9fcfd]/80">
+    <header className="sticky top-0 z-50 border-b border-slate-300/70 bg-[#f9fcfd]/90 backdrop-blur-md supports-backdrop-filter:bg-[#f9fcfd]/80">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-3 md:py-4">
           <a href="/" className="inline-flex items-center gap-1 font-serif text-lg font-semibold tracking-wide text-slate-900 sm:text-xl">
@@ -298,7 +313,7 @@ export default function Header() {
                     <div className="absolute right-0 top-12 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl shadow-slate-900/10">
                       <div className="rounded-xl bg-slate-50 p-3">
                         <a
-                          href={authSession ? (authSession.role === 'ADMIN' ? '/admin-dashboard' : '/user-dashboard') : '/login'}
+                          href={authSession ? getDashboardHomePath(authSession.role) : '/login'}
                           className="truncate text-sm font-semibold text-slate-900 hover:underline"
                         >
                           {profileName}
@@ -350,17 +365,17 @@ export default function Header() {
               <span className="relative h-4 w-5">
                 <span
                   className={`absolute left-0 top-0 h-0.5 w-5 rounded bg-current transition-transform duration-300 ${
-                    isMenuOpen ? 'translate-y-[7px] rotate-45' : ''
+                    isMenuOpen ? 'translate-y-1.75 rotate-45' : ''
                   }`}
                 />
                 <span
-                  className={`absolute left-0 top-[7px] h-0.5 w-5 rounded bg-current transition-opacity duration-300 ${
+                  className={`absolute left-0 top-1.75 h-0.5 w-5 rounded bg-current transition-opacity duration-300 ${
                     isMenuOpen ? 'opacity-0' : 'opacity-100'
                   }`}
                 />
                 <span
-                  className={`absolute left-0 top-[14px] h-0.5 w-5 rounded bg-current transition-transform duration-300 ${
-                    isMenuOpen ? '-translate-y-[7px] -rotate-45' : ''
+                  className={`absolute left-0 top-3.5 h-0.5 w-5 rounded bg-current transition-transform duration-300 ${
+                    isMenuOpen ? '-translate-y-1.75 -rotate-45' : ''
                   }`}
                 />
               </span>
@@ -371,7 +386,7 @@ export default function Header() {
         <div
           id="mobile-menu"
           className={`overflow-hidden transition-[max-height,opacity,padding] duration-300 ease-out md:hidden ${
-            isMenuOpen ? 'max-h-[28rem] pb-4 opacity-100' : 'max-h-0 pb-0 opacity-0'
+            isMenuOpen ? 'max-h-112 pb-4 opacity-100' : 'max-h-0 pb-0 opacity-0'
           }`}
         >
           <div className="rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg shadow-slate-900/5">
@@ -396,7 +411,7 @@ export default function Header() {
                   <HiOutlineUserCircle className="h-7 w-7 text-slate-700" />
                   <div className="min-w-0">
                     <a
-                      href={authSession ? (authSession.role === 'ADMIN' ? '/admin-dashboard' : '/user-dashboard') : '/login'}
+                      href={authSession ? getDashboardHomePath(authSession.role) : '/login'}
                       className="truncate text-sm font-semibold text-slate-900 hover:underline"
                       onClick={closeMobileMenu}
                     >

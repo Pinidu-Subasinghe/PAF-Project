@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import 'sweetalert2/dist/sweetalert2.min.css'
 import {
@@ -29,7 +29,7 @@ function formatDateTime(date, startTime, endTime) {
   return `${date} ${startTime} - ${endTime}`
 }
 
-export default function BookingList({ scope = 'my' }) {
+export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const [bookings, setBookings] = useState([])
   const [statusFilter, setStatusFilter] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -54,7 +54,7 @@ export default function BookingList({ scope = 'my' }) {
 
   const isAllScope = scope === 'all'
 
-  const loadBookings = async () => {
+  const loadBookings = useCallback(async () => {
     setIsLoading(true)
     setErrorMessage('')
 
@@ -68,11 +68,11 @@ export default function BookingList({ scope = 'my' }) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [isAllScope, statusFilter])
 
   useEffect(() => {
     loadBookings()
-  }, [isAllScope, statusFilter])
+  }, [loadBookings])
 
   const sortedBookings = useMemo(
     () => [...bookings].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
@@ -331,24 +331,6 @@ export default function BookingList({ scope = 'my' }) {
     }
   }
 
-  const handleCancelFromModal = async () => {
-    if (!selectedBooking) {
-      return
-    }
-
-    setIsActionLoading(true)
-    setErrorMessage('')
-    try {
-      await cancelBooking(selectedBooking.id)
-      closeBookingModal()
-      await loadBookings()
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to cancel booking.')
-    } finally {
-      setIsActionLoading(false)
-    }
-  }
-
   const handleDeleteFromModal = async () => {
     if (!selectedBooking) {
       return
@@ -382,13 +364,18 @@ export default function BookingList({ scope = 'my' }) {
   }
 
   const navigateToTicket = (bookingId) => {
+    if (typeof onRaiseTicket === 'function') {
+      onRaiseTicket(bookingId)
+      return
+    }
+
     const pathname = `/tickets/create?bookingId=${encodeURIComponent(bookingId)}`
     window.history.pushState(null, '', pathname)
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 md:p-8">
+    <section className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 md:p-8">
       {isAllScope && (
         <div className="mb-5 flex items-center gap-3">
           <label htmlFor="statusFilter" className="text-sm font-medium text-slate-700">Filter by status</label>
@@ -509,7 +496,7 @@ export default function BookingList({ scope = 'my' }) {
 
       {selectedBooking && !isAllScope && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-2xl rounded-[2rem] border border-teal-100 bg-white p-8 shadow-xl shadow-teal-900/5 md:p-10">
+          <div className="w-full max-w-2xl rounded-4xl border border-teal-100 bg-white p-8 shadow-xl shadow-teal-900/5 md:p-10">
             <div className="flex flex-col justify-between gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-start">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">Booking Request</p>
