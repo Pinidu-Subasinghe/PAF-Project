@@ -157,7 +157,7 @@ export default function BookingForm({ resourceId }) {
   }
 
   return (
-    <section className="mx-auto w-full max-w-3xl rounded-[2rem] border border-teal-100 bg-white p-8 shadow-xl shadow-teal-900/5">
+    <section className="mx-auto w-full max-w-3xl rounded-4xl border border-teal-100 bg-white p-8 shadow-xl shadow-teal-900/5">
       <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">Booking Management</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Create Booking Request</h1>
       <p className="mt-2 text-sm text-slate-600">Submit your request. It will be created with status PENDING.</p>
