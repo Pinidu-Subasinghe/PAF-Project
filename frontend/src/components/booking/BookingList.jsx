@@ -41,6 +41,8 @@ function formatDateTime(date, startTime, endTime) {
 export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const [bookings, setBookings] = useState([])
   const [statusFilter, setStatusFilter] = useState('')
+  const [resourceTypeFilter, setResourceTypeFilter] = useState('')
+  const [resourceIdSearch, setResourceIdSearch] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -118,8 +120,26 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
   }, [loadBookings])
 
   const sortedBookings = useMemo(
-    () => [...bookings].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
-    [bookings],
+    () => {
+      let filtered = [...bookings]
+
+      // Filter by resource type
+      if (resourceTypeFilter) {
+        filtered = filtered.filter(booking => booking.resourceType === resourceTypeFilter)
+      }
+
+      // Filter by resource ID search
+      if (resourceIdSearch) {
+        const searchLower = resourceIdSearch.toLowerCase()
+        filtered = filtered.filter(booking =>
+          booking.resourceId.toString().includes(searchLower) ||
+          booking.resourceName?.toLowerCase().includes(searchLower)
+        )
+      }
+
+      return filtered.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    },
+    [bookings, resourceTypeFilter, resourceIdSearch],
   )
 
   const handleApprove = async (bookingId) => {
@@ -433,20 +453,48 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
   return (
     <section className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 md:p-8">
       {isAllScope && (
-        <div className="mb-5 flex items-center gap-3">
-          <label htmlFor="statusFilter" className="text-sm font-medium text-slate-700">Filter by status</label>
-          <select
-            id="statusFilter"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
-          >
-            <option value="">All</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-3">
+              <label htmlFor="statusFilter" className="text-sm font-medium text-slate-700">Status</label>
+              <select
+                id="statusFilter"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+              >
+                <option value="">All</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label htmlFor="resourceTypeFilter" className="text-sm font-medium text-slate-700">Resource Type</label>
+              <select
+                id="resourceTypeFilter"
+                value={resourceTypeFilter}
+                onChange={(event) => setResourceTypeFilter(event.target.value)}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+              >
+                <option value="">All</option>
+                <option value="LAB">Lab</option>
+                <option value="LECTURE_HALL">Lecture Hall</option>
+                <option value="MEETING_ROOM">Meeting Room</option>
+                <option value="EQUIPMENT">Equipment</option>
+              </select>
+            </div>
+          </div>
+
+          <input
+            id="resourceIdSearch"
+            type="text"
+            value={resourceIdSearch}
+            onChange={(event) => setResourceIdSearch(event.target.value)}
+            placeholder="Search by ID or name..."
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 placeholder:text-slate-400"
+          />
         </div>
       )}
 
