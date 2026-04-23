@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import 'sweetalert2/dist/sweetalert2.min.css'
-import {
+import { 
   approveBooking,
   cancelBooking,
   getAllBookings,
+  getAllResources,
   getMyBookings,
   rejectBooking,
   updateBooking,
@@ -15,6 +16,14 @@ const statusBadgeClasses = {
   APPROVED: 'bg-emerald-100 text-emerald-700',
   REJECTED: 'bg-rose-100 text-rose-700',
   CANCELLED: 'bg-slate-200 text-slate-700',
+}
+
+// Enum display name mapping
+const resourceTypeDisplayNames = {
+  LAB: 'Lab',
+  LECTURE_HALL: 'Lecture Hall',
+  MEETING_ROOM: 'Meeting Room',
+  EQUIPMENT: 'Equipment',
 }
 
 function formatStatus(value) {
@@ -51,8 +60,42 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     attendees: '',
     purpose: '',
   })
+  const [resources, setResources] = useState([])
+  const [selectedResourceType, setSelectedResourceType] = useState('')
+  const [selectedResourceId, setSelectedResourceId] = useState('')
 
   const isAllScope = scope === 'all'
+
+  // Filter resources based on selected type
+  const filteredResources = useMemo(() => {
+    if (!selectedResourceType) return []
+    console.log('Filtering resources by type:', selectedResourceType)
+    console.log('Available resources:', resources)
+    const filtered = resources.filter(resource => resource.type === selectedResourceType)
+    console.log('Filtered resources:', filtered)
+    return filtered
+  }, [resources, selectedResourceType])
+
+  // Get unique resource types for dropdown with display names
+  const resourceTypes = useMemo(() => {
+    const types = [...new Set(resources.map(resource => resource.type))]
+    console.log('Available resource types:', types)
+    return types
+  }, [resources])
+
+  // Fetch all resources for dropdown selection
+  useEffect(() => {
+    const loadResources = async () => {
+      try {
+        const response = await getAllResources()
+        console.log('Resources API response:', response)
+        setResources(Array.isArray(response) ? response : [])
+      } catch (error) {
+        console.error('Failed to load resources:', error)
+      }
+    }
+    loadResources()
+  }, [])
 
   const loadBookings = useCallback(async () => {
     setIsLoading(true)
@@ -205,6 +248,9 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
 
   const handleStartEdit = () => {
     if (!selectedBooking) return
+    console.log('Starting edit for booking:', selectedBooking)
+    console.log('Booking resourceType:', selectedBooking.resourceType)
+    console.log('Booking resourceId:', selectedBooking.resourceId)
     setEditFormData({
       date: selectedBooking.date || '',
       startTime: selectedBooking.startTime || '',
@@ -212,6 +258,8 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       attendees: selectedBooking.attendees || '',
       purpose: selectedBooking.purpose || '',
     })
+    setSelectedResourceType(selectedBooking.resourceType || '')
+    setSelectedResourceId(selectedBooking.resourceId || '')
     setFieldErrors({
       date: '',
       startTime: '',
@@ -300,7 +348,12 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       // Format time to HH:mm:ss for LocalTime parsing in backend
       const formatTime = (time) => time?.length === 5 ? `${time}:00` : time
 
+      // Ensure resourceId is valid - use selected or fallback to original
+      const resourceIdToUse = selectedResourceId || selectedBooking.resourceId
+      console.log('Using resourceId:', resourceIdToUse, 'selected:', selectedResourceId, 'original:', selectedBooking.resourceId)
+
       await updateBooking(selectedBooking.id, {
+        resourceId: resourceIdToUse,
         date: editFormData.date,
         startTime: formatTime(editFormData.startTime),
         endTime: formatTime(editFormData.endTime),
@@ -533,6 +586,44 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
 
                 <div>
                   <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Resource Type
+                  </label>
+                  <select
+                    value={selectedResourceType}
+                    onChange={(e) => {
+                      setSelectedResourceType(e.target.value)
+                      setSelectedResourceId('') // Reset resource ID when type changes
+                    }}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  >
+                    <option value="">Select type...</option>
+                    {resourceTypes.map(type => (
+                      <option key={type} value={type}>
+                        {resourceTypeDisplayNames[type] || type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Resource Name
+                  </label>
+                  <select
+                    value={selectedResourceId}
+                    onChange={(e) => setSelectedResourceId(e.target.value)}
+                    disabled={!selectedResourceType}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 disabled:border-slate-200 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select resource...</option>
+                    {filteredResources.map(resource => (
+                      <option key={resource.id} value={resource.id}>{resource.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">
                     Date
                   </label>
                   <input
@@ -634,6 +725,16 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-400">Resource ID</p>
                     <p className="mt-1 text-base font-semibold text-slate-900">{selectedBooking.resourceId}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-400">Resource Name</p>
+                    <p className="mt-1 text-base font-semibold text-slate-900">{selectedBooking.resourceName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-400">Resource Type</p>
+                    <p className="mt-1 text-base font-semibold text-slate-900">
+                      {resourceTypeDisplayNames[selectedBooking.resourceType] || selectedBooking.resourceType}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-400">Date</p>
