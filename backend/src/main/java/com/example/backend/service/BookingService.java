@@ -263,6 +263,29 @@ public class BookingService {
                 throw new UserNotFoundException("User not authorized to delete this booking");
             }
 
+            // If booking is pending, delete it permanently from database
+            if (booking.getStatus() == BookingStatus.PENDING) {
+                bookingRepository.delete(booking);
+                
+                // Notify admins that user deleted the pending booking
+                String title = "Pending booking deleted by user";
+                String message = String.format(
+                    "Pending booking for resource id %d was permanently deleted by %s",
+                        booking.getResourceId(),
+                        actor.getFullName() != null ? actor.getFullName() : actor.getEmail()
+                );
+
+                notificationService.createNotificationsForRole(
+                        Role.ADMIN,
+                        NotificationType.BOOKING_CANCELLED,
+                        title,
+                        message,
+                        "manage-bookings"
+                );
+                return;
+            }
+
+            // For non-pending bookings, use soft deletion
             booking.setDeletedForUser(true);
 
             // Notify admins that user cancelled the booking.
