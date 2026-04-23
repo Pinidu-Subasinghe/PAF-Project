@@ -1,7 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import 'sweetalert2/dist/sweetalert2.min.css'
-import { 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  LineChart,
+  Line,
+  ResponsiveContainer,
+} from 'recharts'
+import {
   approveBooking,
   cancelBooking,
   getAllBookings,
@@ -43,6 +58,8 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const [statusFilter, setStatusFilter] = useState('')
   const [resourceTypeFilter, setResourceTypeFilter] = useState('')
   const [resourceIdSearch, setResourceIdSearch] = useState('')
+  const [viewMode, setViewMode] = useState('bookings')
+  const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -450,53 +467,184 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
+  // Analytics data calculations
+  const analyticsData = useMemo(() => {
+    const total = sortedBookings.length
+    const approved = sortedBookings.filter(b => b.status === 'APPROVED').length
+    const pending = sortedBookings.filter(b => b.status === 'PENDING').length
+    const rejected = sortedBookings.filter(b => b.status === 'REJECTED').length
+    const cancelled = sortedBookings.filter(b => b.status === 'CANCELLED').length
+
+    // Bookings by status for pie chart
+    const statusData = [
+      { name: 'Pending', value: pending, color: '#f59e0b' },
+      { name: 'Approved', value: approved, color: '#10b981' },
+      { name: 'Rejected', value: rejected, color: '#ef4444' },
+      { name: 'Cancelled', value: cancelled, color: '#64748b' },
+    ].filter(item => item.value > 0)
+
+    // Bookings by resource type for bar chart
+    const resourceTypeData = Object.entries(
+      sortedBookings.reduce((acc, booking) => {
+        const type = resourceTypeDisplayNames[booking.resourceType] || booking.resourceType
+        acc[type] = (acc[type] || 0) + 1
+        return acc
+      }, {})
+    ).map(([name, value]) => ({ name, value }))
+
+    // Bookings over time (last 30 days) for line chart
+    const last30Days = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date()
+      date.setDate(date.getDate() - (29 - i))
+      return date.toISOString().split('T')[0]
+    })
+
+    const timeData = last30Days.map(date => ({
+      date: date.slice(5),
+      bookings: sortedBookings.filter(b => b.date === date).length,
+    }))
+
+    // Top 5 most booked resources
+    const resourceBookings = sortedBookings.reduce((acc, booking) => {
+      const key = `${booking.resourceName} (${booking.resourceType})`
+      acc[key] = (acc[key] || 0) + 1
+      return acc
+    }, {})
+
+    const topResources = Object.entries(resourceBookings)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }))
+
+    return {
+      total,
+      approved,
+      pending,
+      rejected,
+      cancelled,
+      statusData,
+      resourceTypeData,
+      timeData,
+      topResources,
+    }
+  }, [sortedBookings])
+
+  // Export to CSV function
+  const exportToCSV = () => {
+    const headers = ['ID', 'Resource ID', 'Resource Name', 'Resource Type', 'Date', 'Start Time', 'End Time', 'Status', 'Attendees', 'Purpose']
+    const csvContent = [
+      headers.join(','),
+      ...sortedBookings.map(booking => [
+        booking.id,
+        booking.resourceId,
+        `"${booking.resourceName}"`,
+        booking.resourceType,
+        booking.date,
+        booking.startTime,
+        booking.endTime,
+        booking.status,
+        booking.attendees,
+        `"${booking.purpose || ''}"`,
+      ].join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `bookings-report-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+
+    Swal.fire({
+      title: 'Export Complete',
+      text: 'Bookings report has been downloaded.',
+      icon: 'success',
+      timer: 1500,
+      showConfirmButton: false,
+    })
+  }
+
   return (
     <section className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 md:p-8">
+      {/* Toggle Switch for Admin */}
       {isAllScope && (
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-3">
-              <label htmlFor="statusFilter" className="text-sm font-medium text-slate-700">Status</label>
-              <select
-                id="statusFilter"
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
-              >
-                <option value="">All</option>
-                <option value="PENDING">Pending</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <label htmlFor="resourceTypeFilter" className="text-sm font-medium text-slate-700">Resource Type</label>
-              <select
-                id="resourceTypeFilter"
-                value={resourceTypeFilter}
-                onChange={(event) => setResourceTypeFilter(event.target.value)}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
-              >
-                <option value="">All</option>
-                <option value="LAB">Lab</option>
-                <option value="LECTURE_HALL">Lecture Hall</option>
-                <option value="MEETING_ROOM">Meeting Room</option>
-                <option value="EQUIPMENT">Equipment</option>
-              </select>
-            </div>
+        <div className="mb-6 flex items-center justify-start">
+          <div className="flex bg-slate-100 rounded-full p-1">
+            <button
+              onClick={() => setViewMode('bookings')}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                viewMode === 'bookings'
+                  ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              All Bookings
+            </button>
+            <button
+              onClick={() => setViewMode('analytics')}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                viewMode === 'analytics'
+                  ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Analytics
+            </button>
           </div>
-
-          <input
-            id="resourceIdSearch"
-            type="text"
-            value={resourceIdSearch}
-            onChange={(event) => setResourceIdSearch(event.target.value)}
-            placeholder="Search by ID or name..."
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 placeholder:text-slate-400"
-          />
         </div>
       )}
+
+      {/* BOOKINGS VIEW */}
+      {viewMode === 'bookings' && (
+        <>
+          {isAllScope && (
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <label htmlFor="statusFilter" className="text-sm font-medium text-slate-700">Status</label>
+                  <select
+                    id="statusFilter"
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value)}
+                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  >
+                    <option value="">All</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label htmlFor="resourceTypeFilter" className="text-sm font-medium text-slate-700">Resource Type</label>
+                  <select
+                    id="resourceTypeFilter"
+                    value={resourceTypeFilter}
+                    onChange={(event) => setResourceTypeFilter(event.target.value)}
+                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  >
+                    <option value="">All</option>
+                    <option value="LAB">Lab</option>
+                    <option value="LECTURE_HALL">Lecture Hall</option>
+                    <option value="MEETING_ROOM">Meeting Room</option>
+                    <option value="EQUIPMENT">Equipment</option>
+                  </select>
+                </div>
+              </div>
+
+              <input
+                id="resourceIdSearch"
+                type="text"
+                value={resourceIdSearch}
+                onChange={(event) => setResourceIdSearch(event.target.value)}
+                placeholder="Search by ID or name..."
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 placeholder:text-slate-400"
+              />
+            </div>
+          )}
 
       {errorMessage && (
         <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -879,6 +1027,232 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                     Close
                   </button>
                 </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+        </>
+      )}
+
+      {/* ANALYTICS VIEW */}
+      {viewMode === 'analytics' && (
+        <div className="space-y-6">
+          {/* Analytics Filters */}
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-3">
+                <label htmlFor="analyticsStatusFilter" className="text-sm font-medium text-slate-700">Status</label>
+                <select
+                  id="analyticsStatusFilter"
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                >
+                  <option value="">All</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label htmlFor="analyticsResourceTypeFilter" className="text-sm font-medium text-slate-700">Resource Type</label>
+                <select
+                  id="analyticsResourceTypeFilter"
+                  value={resourceTypeFilter}
+                  onChange={(event) => setResourceTypeFilter(event.target.value)}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                >
+                  <option value="">All</option>
+                  <option value="LAB">Lab</option>
+                  <option value="LECTURE_HALL">Lecture Hall</option>
+                  <option value="MEETING_ROOM">Meeting Room</option>
+                  <option value="EQUIPMENT">Equipment</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-slate-700">Date Range</label>
+                <input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                />
+                <span className="text-slate-500">to</span>
+                <input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={exportToCSV}
+              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download Report
+            </button>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-600 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-blue-700">Total Bookings</p>
+              </div>
+              <p className="text-3xl font-bold text-blue-900">{analyticsData.total}</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-6 border border-emerald-200">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-emerald-600 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-emerald-700">Approved</p>
+              </div>
+              <p className="text-3xl font-bold text-emerald-900">{analyticsData.approved}</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 border border-amber-200">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-amber-600 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-amber-700">Pending</p>
+              </div>
+              <p className="text-3xl font-bold text-amber-900">{analyticsData.pending}</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl p-6 border border-rose-200">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-rose-600 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-rose-700">Rejected</p>
+              </div>
+              <p className="text-3xl font-bold text-rose-900">{analyticsData.rejected}</p>
+            </div>
+          </div>
+
+          {/* Charts Row 1 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Pie Chart - Bookings by Status */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Bookings by Status</h3>
+              <div className="h-64">
+                {analyticsData.statusData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={analyticsData.statusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {analyticsData.statusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    No data available
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bar Chart - Bookings by Resource Type */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Bookings by Resource Type</h3>
+              <div className="h-64">
+                {analyticsData.resourceTypeData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analyticsData.resourceTypeData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#0d9488" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    No data available
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Row 2 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Line Chart - Bookings Over Time */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Bookings Over Time (Last 30 Days)</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={analyticsData.timeData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="bookings" stroke="#0d9488" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Top 5 Resources Table */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Top 5 Most Booked Resources</h3>
+              {analyticsData.topResources.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold rounded-tl-lg">Resource</th>
+                        <th className="px-4 py-3 font-semibold rounded-tr-lg text-right">Bookings</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {analyticsData.topResources.map((resource, index) => (
+                        <tr key={index}>
+                          <td className="px-4 py-3 text-slate-700">{resource.name}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-slate-900">{resource.count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-48 text-slate-400">
+                  No data available
+                </div>
               )}
             </div>
           </div>
