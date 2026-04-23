@@ -410,6 +410,8 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
             <thead className="bg-slate-50 text-slate-600">
               <tr>
                 <th className="px-4 py-3 font-semibold">Resource ID</th>
+                <th className="px-4 py-3 font-semibold">Resource</th>
+                <th className="px-4 py-3 font-semibold">Resource Type</th>
                 <th className="px-4 py-3 font-semibold">Date &amp; Time</th>
                 {isAllScope && <th className="px-4 py-3 font-semibold">Purpose</th>}
                 <th className="px-4 py-3 font-semibold">Attendees</th>
@@ -426,6 +428,8 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                 return (
                   <tr key={booking.id}>
                     <td className="px-4 py-3 font-medium text-slate-800">{booking.resourceId}</td>
+                    <td className="px-4 py-3 text-slate-700">{booking.resourceName}</td>
+                    <td className="px-4 py-3 text-slate-700">{booking.resourceType}</td>
                     <td className="px-4 py-3 text-slate-700">{formatDateTime(booking.date, booking.startTime, booking.endTime)}</td>
                     {isAllScope && (
                       <td className="px-4 py-3 text-slate-700">

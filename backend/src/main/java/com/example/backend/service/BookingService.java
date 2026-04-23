@@ -479,9 +479,12 @@ public class BookingService {
     }
 
     private BookingResponse toResponse(Booking booking) {
+        Resource resource = findResourceById(booking.getResourceId());
         return new BookingResponse(
                 booking.getId(),
                 booking.getResourceId(),
+                resource.getType().name(),
+                resource.getName(),
                 booking.getUserId(),
                 booking.getDate(),
                 booking.getStartTime(),
