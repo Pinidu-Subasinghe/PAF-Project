@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import UserDashboard from './pages/UserDashboard'
 import AdminDashboard from './pages/AdminDashboard'
+import TechnicianDashboard from './pages/TechnicianDashboard'
 import ResourcesPage from './pages/ResourcesPage'
 import ResourceDetailsCard from './components/ResourceDetailsCard'
 import AboutUs from './components/AboutUs'
@@ -69,6 +70,8 @@ function App() {
 
       const destination = session.role === 'ADMIN'
         ? '/admin-dashboard?tab=manage-bookings'
+        : session.role === 'TECHNICIAN'
+          ? '/technician-dashboard?tab=assigned'
         : '/user-dashboard?tab=my-bookings'
 
       window.history.replaceState(null, '', destination)
@@ -92,7 +95,8 @@ function App() {
   const isSignUpPage = currentPath.startsWith('/signup') || currentPath.startsWith('/register')
   const isAdminDashboardPage = currentPath.startsWith('/admin-dashboard')
   const isUserDashboardPage = currentPath.startsWith('/user-dashboard')
-  const isDashboardPage = isAdminDashboardPage || isUserDashboardPage
+  const isTechnicianDashboardPage = currentPath.startsWith('/technician-dashboard')
+  const isDashboardPage = isAdminDashboardPage || isUserDashboardPage || isTechnicianDashboardPage
   const isAboutUsPage = currentPath.startsWith('/about-us')
   const isResourceDetailsPage = currentPath.startsWith('/resources/') && currentPath.length > '/resources/'.length
   const isResourcesPage = currentPath.startsWith('/resources') && !isResourceDetailsPage
@@ -144,9 +148,17 @@ function App() {
                               ))
                             : <LoginPage />
                         )
+                      : isTechnicianDashboardPage
+                        ? (
+                            session
+                              ? (session.role === 'TECHNICIAN' ? <TechnicianDashboard /> : <LoginPage />)
+                              : <LoginPage />
+                          )
                       : (
                           // user dashboard
-                          session ? <UserDashboard /> : <LoginPage />
+                          session
+                            ? (session.role === 'TECHNICIAN' ? <TechnicianDashboard /> : <UserDashboard />)
+                            : <LoginPage />
                         )
                   )
                 : <HomePage />}

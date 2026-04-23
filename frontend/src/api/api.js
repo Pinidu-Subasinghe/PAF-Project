@@ -20,6 +20,13 @@ function readErrorDetails(payload, fallbackMessage) {
   return { message: fallbackMessage, field: null }
 }
 
+function buildMultipartRequest(formData) {
+  return {
+    method: 'POST',
+    body: formData,
+  }
+}
+
 async function request(path, options = {}) {
   const { method = 'GET', body, headers = {} } = options
 
@@ -198,6 +205,123 @@ export async function createBooking(bookingPayload) {
   })
 }
 
+function buildTicketFormData(ticketPayload, attachments = []) {
+  const formData = new FormData()
+  const dataBlob = new Blob([JSON.stringify(ticketPayload)], { type: 'application/json' })
+  formData.append('data', dataBlob)
+
+  if (Array.isArray(attachments)) {
+    attachments.filter(Boolean).forEach((file) => formData.append('attachments', file))
+  }
+
+  return formData
+}
+
+export async function createIncidentTicket(ticketPayload, attachments = []) {
+  const formData = buildTicketFormData(ticketPayload, attachments)
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/tickets`, {
+    ...buildMultipartRequest(formData),
+    headers: getAuthHeader(),
+  })
+
+  const payload = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    const { message, field } = readErrorDetails(payload, 'Request failed. Please try again.')
+    throw new ApiRequestError(message, field)
+  }
+
+  return payload
+}
+
+export async function getMyIncidentTickets() {
+  return request('/api/v1/tickets/my', {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function getIncidentTickets(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return request(`/api/v1/tickets${query}`, {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function getAssignedIncidentTickets(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return request(`/api/v1/tickets/assigned${query}`, {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function getIncidentTicketById(ticketId) {
+  return request(`/api/v1/tickets/${ticketId}`, {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function assignIncidentTicket(ticketId, payload) {
+  return request(`/api/v1/tickets/${ticketId}/assign`, {
+    method: 'PUT',
+    body: payload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function rejectIncidentTicket(ticketId, payload) {
+  return request(`/api/v1/tickets/${ticketId}/reject`, {
+    method: 'PUT',
+    body: payload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function resolveIncidentTicket(ticketId, payload) {
+  return request(`/api/v1/tickets/${ticketId}/resolve`, {
+    method: 'PUT',
+    body: payload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function closeIncidentTicket(ticketId) {
+  return request(`/api/v1/tickets/${ticketId}/close`, {
+    method: 'PUT',
+    headers: getAuthHeader(),
+  })
+}
+
+export async function deleteIncidentTicket(ticketId) {
+  return request(`/api/v1/tickets/${ticketId}`, {
+    method: 'DELETE',
+    headers: getAuthHeader(),
+  })
+}
+
+export async function addIncidentTicketComment(ticketId, payload) {
+  return request(`/api/v1/tickets/${ticketId}/comments`, {
+    method: 'POST',
+    body: payload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function updateIncidentTicketComment(commentId, payload) {
+  return request(`/api/v1/tickets/comments/${commentId}`, {
+    method: 'PUT',
+    body: payload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function deleteIncidentTicketComment(commentId) {
+  return request(`/api/v1/tickets/comments/${commentId}`, {
+    method: 'DELETE',
+    headers: getAuthHeader(),
+  })
+}
+
 export async function getMyBookings() {
   return request('/api/bookings/my', {
     headers: getAuthHeader(),
@@ -229,6 +353,14 @@ export async function rejectBooking(bookingId, reason) {
 export async function cancelBooking(bookingId) {
   return request(`/api/bookings/${bookingId}`, {
     method: 'DELETE',
+    headers: getAuthHeader(),
+  })
+}
+
+export async function updateBooking(bookingId, bookingPayload) {
+  return request(`/api/bookings/${bookingId}`, {
+    method: 'PUT',
+    body: bookingPayload,
     headers: getAuthHeader(),
   })
 }

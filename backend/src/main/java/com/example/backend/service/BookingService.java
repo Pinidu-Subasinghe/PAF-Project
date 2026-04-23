@@ -2,6 +2,7 @@ package com.example.backend.service;
 
 import com.example.backend.dto.request.BookingCreateRequest;
 import com.example.backend.dto.request.BookingRejectRequest;
+import com.example.backend.dto.request.BookingUpdateRequest;
 import com.example.backend.dto.response.BookingResponse;
 import com.example.backend.entity.AppUser;
 import com.example.backend.entity.Booking;
@@ -180,6 +181,77 @@ public class BookingService {
     }
 
     @Transactional
+    public BookingResponse updateBooking(Long bookingId, String userEmail, BookingUpdateRequest request) {
+        Booking booking = findBooking(bookingId);
+        AppUser user = findUserByEmail(userEmail);
+
+        // Only allow update if user owns the booking and it's still pending
+        if (!booking.getUserId().equals(user.getId())) {
+            throw new UserNotFoundException("User not authorized to update this booking");
+        }
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalArgumentException("Only pending bookings can be updated");
+        }
+
+        Resource resource = findResourceById(booking.getResourceId());
+
+        validateDate(request.date());
+        validateTimeWindow(request.startTime(), request.endTime());
+        validateResourceAvailability(
+            request.startTime(),
+            request.endTime(),
+            resource.getAvailableFrom(),
+            resource.getAvailableTo()
+        );
+        validateCapacity(request.attendees(), resource.getCapacity());
+
+        // Check for conflicts excluding this booking itself
+        validateUpdateBookingConflict(
+            bookingId,
+            booking.getResourceId(),
+            request.date(),
+            request.startTime(),
+            request.endTime()
+        );
+
+        booking.setDate(request.date());
+        booking.setStartTime(request.startTime());
+        booking.setEndTime(request.endTime());
+        booking.setPurpose(request.purpose().trim());
+        booking.setAttendees(request.attendees());
+
+        Booking saved = bookingRepository.save(booking);
+        return toResponse(saved);
+    }
+
+    private void validateUpdateBookingConflict(
+            Long currentBookingId,
+            Long resourceId,
+            LocalDate date,
+            LocalTime startTime,
+            LocalTime endTime
+    ) {
+        List<Booking> existingBookings = bookingRepository.findByResourceIdAndDate(resourceId, date);
+
+        boolean hasConflict = existingBookings.stream()
+                .filter(booking -> !booking.getId().equals(currentBookingId))
+                .filter(booking -> booking.getStatus() != BookingStatus.CANCELLED)
+                .filter(booking -> booking.getStatus() != BookingStatus.REJECTED)
+                .anyMatch(booking ->
+                        booking.getStartTime().isBefore(endTime)
+                                && booking.getEndTime().isAfter(startTime)
+                );
+
+        if (hasConflict) {
+            throw new BookingConflictException(
+                    "This resource is already booked for the selected time range.",
+                    "time"
+            );
+        }
+    }
+
+    @Transactional
     public void deleteBooking(Long bookingId, String actorEmail) {
         Booking booking = findBooking(bookingId);
 
@@ -191,6 +263,29 @@ public class BookingService {
                 throw new UserNotFoundException("User not authorized to delete this booking");
             }
 
+            // If booking is pending, delete it permanently from database
+            if (booking.getStatus() == BookingStatus.PENDING) {
+                bookingRepository.delete(booking);
+                
+                // Notify admins that user deleted the pending booking
+                String title = "Pending booking deleted by user";
+                String message = String.format(
+                    "Pending booking for resource id %d was permanently deleted by %s",
+                        booking.getResourceId(),
+                        actor.getFullName() != null ? actor.getFullName() : actor.getEmail()
+                );
+
+                notificationService.createNotificationsForRole(
+                        Role.ADMIN,
+                        NotificationType.BOOKING_CANCELLED,
+                        title,
+                        message,
+                        "manage-bookings"
+                );
+                return;
+            }
+
+            // For non-pending bookings, use soft deletion
             booking.setDeletedForUser(true);
 
             // Notify admins that user cancelled the booking.
