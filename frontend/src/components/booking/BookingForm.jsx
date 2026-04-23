@@ -55,6 +55,8 @@ export default function BookingForm({ resourceId }) {
 
     if (!form.purpose.trim()) {
       errors.purpose = 'Purpose is required.'
+    } else if (form.purpose.trim().length > 40) {
+      errors.purpose = 'Purpose must be at most 40 characters.'
     }
 
     const attendees = Number(form.attendees)
@@ -160,7 +162,7 @@ export default function BookingForm({ resourceId }) {
       <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Create Booking Request</h1>
       <p className="mt-2 text-sm text-slate-600">Submit your request. It will be created with status PENDING.</p>
 
-      <form className="mt-8 grid gap-5" onSubmit={handleSubmit}>
+      <form className="mt-8 grid gap-5" onSubmit={handleSubmit} noValidate>
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Resource ID
           <input
@@ -180,8 +182,7 @@ export default function BookingForm({ resourceId }) {
               name="date"
               value={form.date}
               onChange={handleChange}
-              required
-              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.date ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
+              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.date ? 'border-red-500 bg-red-50/50' : 'border-slate-300'}`}
             />
             {fieldErrors.date && <span className="text-red-500 text-sm mt-1">{fieldErrors.date}</span>}
           </label>
@@ -194,8 +195,7 @@ export default function BookingForm({ resourceId }) {
               value={form.attendees}
               onChange={handleChange}
               min="1"
-              required
-              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.attendees ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
+              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.attendees ? 'border-red-500 bg-red-50/50' : 'border-slate-300'}`}
             />
             {fieldErrors.attendees && <span className="text-red-500 text-sm mt-1">{fieldErrors.attendees}</span>}
           </label>
@@ -209,8 +209,7 @@ export default function BookingForm({ resourceId }) {
               name="startTime"
               value={form.startTime}
               onChange={handleChange}
-              required
-              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.startTime || fieldErrors.time ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
+              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.startTime || fieldErrors.time ? 'border-red-500 bg-red-50/50' : 'border-slate-300'}`}
             />
             {fieldErrors.startTime && <span className="text-red-500 text-sm mt-1">{fieldErrors.startTime}</span>}
           </label>
@@ -222,8 +221,7 @@ export default function BookingForm({ resourceId }) {
               name="endTime"
               value={form.endTime}
               onChange={handleChange}
-              required
-              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.endTime || fieldErrors.time ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
+              className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.endTime || fieldErrors.time ? 'border-red-500 bg-red-50/50' : 'border-slate-300'}`}
             />
             {fieldErrors.endTime && <span className="text-red-500 text-sm mt-1">{fieldErrors.endTime}</span>}
           </label>
@@ -237,10 +235,9 @@ export default function BookingForm({ resourceId }) {
             name="purpose"
             value={form.purpose}
             onChange={handleChange}
-            required
             rows={4}
-            maxLength={500}
-            className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.purpose ? 'border-rose-400 bg-rose-50/50' : 'border-slate-300'}`}
+            maxLength={40}
+            className={`rounded-xl border bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 ${fieldErrors.purpose ? 'border-red-500 bg-red-50/50' : 'border-slate-300'}`}
           />
           {fieldErrors.purpose && <span className="text-red-500 text-sm mt-1">{fieldErrors.purpose}</span>}
         </label>
@@ -256,7 +253,7 @@ export default function BookingForm({ resourceId }) {
         <div className="flex flex-wrap items-center gap-3 pt-2">
           <button
             type="submit"
-            disabled={isSubmitting || !isFormValid}
+            disabled={isSubmitting}
             className="inline-flex items-center justify-center rounded-full bg-teal-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Booking'}
