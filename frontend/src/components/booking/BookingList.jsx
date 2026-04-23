@@ -189,6 +189,44 @@ export default function BookingList({ scope = 'my' }) {
     }
   }
 
+  const handleDeleteFromModal = async () => {
+    if (!selectedBooking) {
+      return
+    }
+
+    const confirmation = await Swal.fire({
+      title: 'Delete booking?',
+      text: 'This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#dc2626',
+    })
+
+    if (!confirmation.isConfirmed) {
+      return
+    }
+
+    setIsActionLoading(true)
+    setErrorMessage('')
+    try {
+      await cancelBooking(selectedBooking.id)
+      closeBookingModal()
+      await loadBookings()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to delete booking.')
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  const navigateToEditBooking = (resourceId) => {
+    const pathname = `/bookings/create/${encodeURIComponent(resourceId)}`
+    window.history.pushState(null, '', pathname)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
   const navigateToTicket = (bookingId) => {
     const pathname = `/tickets/create?bookingId=${encodeURIComponent(bookingId)}`
     window.history.pushState(null, '', pathname)
@@ -368,14 +406,24 @@ export default function BookingList({ scope = 'my' }) {
             )}
 
             <div className="mt-6 flex flex-wrap justify-end gap-2">
-              {(selectedBooking.status === 'PENDING' || selectedBooking.status === 'APPROVED') && (
+              {selectedBooking.status === 'PENDING' && (
+                <button
+                  type="button"
+                  onClick={() => navigateToEditBooking(selectedBooking.resourceId)}
+                  className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                >
+                  Update
+                </button>
+              )}
+
+              {selectedBooking.status === 'PENDING' && (
                 <button
                   type="button"
                   disabled={isActionLoading}
-                  onClick={handleCancelFromModal}
-                  className="rounded-full border border-rose-300 px-5 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={handleDeleteFromModal}
+                  className="rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isActionLoading ? 'Cancelling...' : 'Cancel'}
+                  {isActionLoading ? 'Deleting...' : 'Delete'}
                 </button>
               )}
 
