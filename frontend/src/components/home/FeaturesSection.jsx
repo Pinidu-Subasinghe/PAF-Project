@@ -19,9 +19,9 @@ const modules = [
   },
   {
     code: 'D',
-    title: 'Notifications',
-    description: 'Deliver in-app updates for booking decisions, ticket state changes, and comments.',
-    highlights: ['Approval/rejection alerts', 'Ticket updates', 'Notification panel in web UI'],
+    title: 'Workflow Tracking',
+    description: 'Track booking decisions, ticket progress, and comments directly from the dashboard.',
+    highlights: ['Decision history', 'Ticket timeline', 'Dashboard activity view'],
   },
   {
     code: 'E',

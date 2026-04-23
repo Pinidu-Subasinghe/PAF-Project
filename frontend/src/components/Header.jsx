@@ -252,7 +252,7 @@ export default function Header() {
   )
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-300/70 bg-[#f9fcfd]/90 backdrop-blur-md supports-[backdrop-filter]:bg-[#f9fcfd]/80">
+    <header className="sticky top-0 z-50 border-b border-slate-300/70 bg-[#f9fcfd]/90 backdrop-blur-md supports-backdrop-filter:bg-[#f9fcfd]/80">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-3 md:py-4">
           <a href="/" className="inline-flex items-center gap-1 font-serif text-lg font-semibold tracking-wide text-slate-900 sm:text-xl">
@@ -350,17 +350,17 @@ export default function Header() {
               <span className="relative h-4 w-5">
                 <span
                   className={`absolute left-0 top-0 h-0.5 w-5 rounded bg-current transition-transform duration-300 ${
-                    isMenuOpen ? 'translate-y-[7px] rotate-45' : ''
+                    isMenuOpen ? 'translate-y-1.75 rotate-45' : ''
                   }`}
                 />
                 <span
-                  className={`absolute left-0 top-[7px] h-0.5 w-5 rounded bg-current transition-opacity duration-300 ${
+                  className={`absolute left-0 top-1.75 h-0.5 w-5 rounded bg-current transition-opacity duration-300 ${
                     isMenuOpen ? 'opacity-0' : 'opacity-100'
                   }`}
                 />
                 <span
-                  className={`absolute left-0 top-[14px] h-0.5 w-5 rounded bg-current transition-transform duration-300 ${
-                    isMenuOpen ? '-translate-y-[7px] -rotate-45' : ''
+                  className={`absolute left-0 top-3.5 h-0.5 w-5 rounded bg-current transition-transform duration-300 ${
+                    isMenuOpen ? '-translate-y-1.75 -rotate-45' : ''
                   }`}
                 />
               </span>
@@ -371,7 +371,7 @@ export default function Header() {
         <div
           id="mobile-menu"
           className={`overflow-hidden transition-[max-height,opacity,padding] duration-300 ease-out md:hidden ${
-            isMenuOpen ? 'max-h-[28rem] pb-4 opacity-100' : 'max-h-0 pb-0 opacity-0'
+            isMenuOpen ? 'max-h-112 pb-4 opacity-100' : 'max-h-0 pb-0 opacity-0'
           }`}
         >
           <div className="rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg shadow-slate-900/5">
