@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.request.BookingCreateRequest;
 import com.example.backend.dto.request.BookingRejectRequest;
+import com.example.backend.dto.request.BookingUpdateRequest;
 import com.example.backend.dto.response.BookingResponse;
 import com.example.backend.enums.BookingStatus;
 import com.example.backend.exception.UserNotFoundException;
@@ -65,6 +66,16 @@ public class BookingController {
             Authentication authentication
     ) {
         return ResponseEntity.ok(bookingService.rejectBooking(id, request, requireEmail(authentication)));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<BookingResponse> updateBooking(
+            @PathVariable Long id,
+            @Valid @RequestBody BookingUpdateRequest request,
+            Authentication authentication
+    ) {
+        BookingResponse response = bookingService.updateBooking(id, requireEmail(authentication), request);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
