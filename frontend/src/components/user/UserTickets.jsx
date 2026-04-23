@@ -1,3 +1,5 @@
+import { HiOutlineTrash } from 'react-icons/hi2'
+
 const statusBadgeClasses = {
 	OPEN: 'bg-amber-100 text-amber-700',
 	IN_PROGRESS: 'bg-blue-100 text-blue-700',
@@ -27,7 +29,11 @@ export default function UserTickets({
 	isLoading = false,
 	errorMessage = '',
 	onSelectTicket,
+	onDeleteTicket,
+	deletingTicketIds = [],
 }) {
+	const canDeleteTicket = (status) => ['OPEN', 'RESOLVED', 'REJECTED', 'CLOSED'].includes(status)
+
 	return (
 		<div className="space-y-6">
 			{isLoading ? (
@@ -40,10 +46,8 @@ export default function UserTickets({
 				</div>
 			) : (
 				tickets.map((ticket) => (
-					<button
+					<div
 						key={ticket.id}
-						type="button"
-						onClick={() => onSelectTicket?.(ticket)}
 						className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50 sm:p-5"
 					>
 						<div className="flex flex-wrap items-start justify-between gap-3">
@@ -51,13 +55,23 @@ export default function UserTickets({
 								<p className="truncate text-sm font-semibold text-slate-900">{ticket.title}</p>
 								<p className="mt-1 text-xs text-slate-500">Ticket #{ticket.id}</p>
 							</div>
-							<div className="flex flex-wrap gap-2">
+							<div className="flex flex-wrap items-center gap-2">
 								<span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClasses[ticket.status] ?? 'bg-slate-100 text-slate-700'}`}>
 									{formatLabel(ticket.status)}
 								</span>
 								<span className={`rounded-full px-3 py-1 text-xs font-semibold ${priorityBadgeClasses[ticket.priority] ?? 'bg-slate-100 text-slate-700'}`}>
 									{formatLabel(ticket.priority)}
 								</span>
+								<button
+									type="button"
+									onClick={() => onDeleteTicket?.(ticket)}
+									disabled={!canDeleteTicket(ticket.status) || deletingTicketIds.includes(ticket.id)}
+									className="rounded-full p-2 text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+									aria-label={`Delete ticket ${ticket.id}`}
+									title={canDeleteTicket(ticket.status) ? 'Delete ticket' : 'Cannot delete while ticket is in progress'}
+								>
+									<HiOutlineTrash className="h-5 w-5" />
+								</button>
 							</div>
 						</div>
 
@@ -73,7 +87,17 @@ export default function UserTickets({
 								<dd className="mt-1 font-medium text-slate-700">{ticket.location || ticket.resourceId || 'Not provided'}</dd>
 							</div>
 						</dl>
-					</button>
+
+						<div className="mt-4">
+							<button
+								type="button"
+								onClick={() => onSelectTicket?.(ticket)}
+								className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+							>
+								View details
+							</button>
+						</div>
+					</div>
 				))
 			)}
 

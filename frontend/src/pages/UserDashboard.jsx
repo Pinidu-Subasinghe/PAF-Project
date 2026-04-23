@@ -6,7 +6,7 @@ import UserRaiseTicket from '../components/user/UserRaiseTicket'
 import UserTicketManagement from '../components/user/UserTicketManagement'
 import UserTickets from '../components/user/UserTickets'
 import BookingList from '../components/booking/BookingList'
-import { getMyIncidentTickets } from '../api/api'
+import { deleteIncidentTicket, getMyIncidentTickets } from '../api/api'
 import { authSessionChangeEvent, readAuthSession } from '../utils/authSession'
 import { userNavItems, adminNavItems } from '../utils/dashboardNav'
 
@@ -46,6 +46,7 @@ export default function UserDashboard() {
 	const [myTickets, setMyTickets] = useState([])
 	const [ticketsLoading, setTicketsLoading] = useState(false)
 	const [ticketsError, setTicketsError] = useState('')
+	const [deletingTicketIds, setDeletingTicketIds] = useState([])
 	const [selectedTicketId, setSelectedTicketId] = useState(() => {
 		const queryParams = new URLSearchParams(window.location.search)
 		const rawTicketId = queryParams.get('ticketId')?.trim()
@@ -172,6 +173,34 @@ export default function UserDashboard() {
 			.finally(() => setTicketsLoading(false))
 	}
 
+	const handleDeleteTicket = async (ticket) => {
+		if (!ticket?.id) {
+			return
+		}
+
+		const canDelete = ['OPEN', 'RESOLVED', 'REJECTED', 'CLOSED'].includes(ticket.status)
+		if (!canDelete) {
+			setTicketsError('Ticket cannot be deleted while it is in progress.')
+			return
+		}
+
+		const confirmed = window.confirm(`Delete ticket #${ticket.id} permanently? This action cannot be undone.`)
+		if (!confirmed) {
+			return
+		}
+
+		setTicketsError('')
+		setDeletingTicketIds((current) => [...current, ticket.id])
+		try {
+			await deleteIncidentTicket(ticket.id)
+			setMyTickets((current) => current.filter((item) => item.id !== ticket.id))
+		} catch (error) {
+			setTicketsError(error instanceof Error ? error.message : 'Unable to delete ticket right now.')
+		} finally {
+			setDeletingTicketIds((current) => current.filter((id) => id !== ticket.id))
+		}
+	}
+
 	const contentById = {
 		profile: <Profile session={session} />,
 		'change-password': <ChangePassword session={session} />,
@@ -193,6 +222,8 @@ export default function UserDashboard() {
 						isLoading={ticketsLoading}
 						errorMessage={ticketsError}
 						onSelectTicket={openMyTicket}
+						onDeleteTicket={handleDeleteTicket}
+						deletingTicketIds={deletingTicketIds}
 					/>
 				)
 		),

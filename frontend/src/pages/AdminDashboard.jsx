@@ -44,6 +44,8 @@ function readRequestedTab(navItems) {
 export default function AdminDashboard() {
   const [session, setSession] = useState(() => readAuthSession())
   const [selectedResourceId, setSelectedResourceId] = useState(null)
+  const navItems = useMemo(() => adminNavItems, [])
+  const [activeItemId, setActiveItemId] = useState(() => readRequestedTab(navItems) ?? navItems[0].id)
 
   useEffect(() => {
     const syncSession = () => {
@@ -59,45 +61,12 @@ export default function AdminDashboard() {
     }
   }, [])
 
-  if (!session) {
-    return (
-      <main className="min-h-screen bg-slate-50">
-        <div className="mx-auto w-full max-w-2xl px-4 py-16 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">Sign in required</h1>
-          <p className="mt-2 text-sm text-slate-500">Please sign in to view the admin dashboard.</p>
-          <a
-            href="/login"
-            className="mt-6 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            Go to login
-          </a>
-        </div>
-      </main>
-    )
-  }
-
-  const navItems = useMemo(() => adminNavItems, [])
-  const [activeItemId, setActiveItemId] = useState(() => readRequestedTab(navItems) ?? navItems[0].id)
-
   const handleSelect = (id) => {
     setActiveItemId(id)
     if (id !== 'manage-resources') {
       setSelectedResourceId(null)
     }
   }
-
-  useEffect(() => {
-    setActiveItemId((currentActiveItemId) => {
-      const requestedTab = readRequestedTab(navItems)
-      if (requestedTab) {
-        return requestedTab
-      }
-
-      return navItems.some((item) => item.id === currentActiveItemId)
-        ? currentActiveItemId
-        : navItems[0].id
-    })
-  }, [navItems])
 
   useEffect(() => {
     const syncActiveItemWithLocation = () => {
@@ -115,6 +84,23 @@ export default function AdminDashboard() {
       window.removeEventListener('hashchange', syncActiveItemWithLocation)
     }
   }, [navItems])
+
+  if (!session) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <div className="mx-auto w-full max-w-2xl px-4 py-16 text-center">
+          <h1 className="text-2xl font-semibold text-slate-900">Sign in required</h1>
+          <p className="mt-2 text-sm text-slate-500">Please sign in to view the admin dashboard.</p>
+          <a
+            href="/login"
+            className="mt-6 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+          >
+            Go to login
+          </a>
+        </div>
+      </main>
+    )
+  }
 
   const handleResourceSelect = (resourceId) => {
     setSelectedResourceId(resourceId)

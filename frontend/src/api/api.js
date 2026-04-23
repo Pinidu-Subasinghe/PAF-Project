@@ -248,6 +248,13 @@ export async function getIncidentTickets(status) {
   })
 }
 
+export async function getAssignedIncidentTickets(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return request(`/api/v1/tickets/assigned${query}`, {
+    headers: getAuthHeader(),
+  })
+}
+
 export async function getIncidentTicketById(ticketId) {
   return request(`/api/v1/tickets/${ticketId}`, {
     headers: getAuthHeader(),
@@ -281,6 +288,13 @@ export async function resolveIncidentTicket(ticketId, payload) {
 export async function closeIncidentTicket(ticketId) {
   return request(`/api/v1/tickets/${ticketId}/close`, {
     method: 'PUT',
+    headers: getAuthHeader(),
+  })
+}
+
+export async function deleteIncidentTicket(ticketId) {
+  return request(`/api/v1/tickets/${ticketId}`, {
+    method: 'DELETE',
     headers: getAuthHeader(),
   })
 }

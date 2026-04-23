@@ -23,11 +23,26 @@ function navigateTo(pathname) {
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
+function getDashboardHomePath(role) {
+  if (role === 'ADMIN') {
+    return '/admin-dashboard'
+  }
+
+  if (role === 'TECHNICIAN') {
+    return '/technician-dashboard'
+  }
+
+  return '/user-dashboard'
+}
+
 function resolveNotificationDestination(notification, authSession) {
   const target = notification?.actionTarget?.trim()
+  const role = authSession?.role
 
   if (target === 'change-password') {
-    return authSession?.role === 'ADMIN' ? '/admin-dashboard?tab=change-password' : '/user-dashboard?tab=change-password'
+    return role === 'ADMIN'
+      ? '/admin-dashboard?tab=change-password'
+      : getDashboardHomePath(role)
   }
 
   if (target === 'manage-bookings') {
@@ -42,7 +57,7 @@ function resolveNotificationDestination(notification, authSession) {
     return '/admin-dashboard?tab=manage-resources'
   }
 
-  return authSession?.role === 'ADMIN' ? '/admin-dashboard' : '/user-dashboard'
+  return getDashboardHomePath(role)
 }
 
 export default function Header() {
@@ -298,7 +313,7 @@ export default function Header() {
                     <div className="absolute right-0 top-12 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl shadow-slate-900/10">
                       <div className="rounded-xl bg-slate-50 p-3">
                         <a
-                          href={authSession ? (authSession.role === 'ADMIN' ? '/admin-dashboard' : '/user-dashboard') : '/login'}
+                          href={authSession ? getDashboardHomePath(authSession.role) : '/login'}
                           className="truncate text-sm font-semibold text-slate-900 hover:underline"
                         >
                           {profileName}
@@ -396,7 +411,7 @@ export default function Header() {
                   <HiOutlineUserCircle className="h-7 w-7 text-slate-700" />
                   <div className="min-w-0">
                     <a
-                      href={authSession ? (authSession.role === 'ADMIN' ? '/admin-dashboard' : '/user-dashboard') : '/login'}
+                      href={authSession ? getDashboardHomePath(authSession.role) : '/login'}
                       className="truncate text-sm font-semibold text-slate-900 hover:underline"
                       onClick={closeMobileMenu}
                     >
