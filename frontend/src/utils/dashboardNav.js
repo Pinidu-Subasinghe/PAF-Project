@@ -11,6 +11,7 @@ export const userNavItems = [
 
 export const adminNavItems = [
   ...commonNavItems,
+  { id: 'user-management', label: 'User Management', description: 'Manage user accounts' },
   { id: 'add-resources', label: 'Add resources', description: 'Add new campus facilities' },
   { id: 'manage-resources', label: 'Manage resources', description: 'Manage the facilities catalogue' },
   { id: 'manage-bookings', label: 'Manage bookings', description: 'Review and manage all reservations' },
