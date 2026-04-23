@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
 import 'sweetalert2/dist/sweetalert2.min.css'
 import {
@@ -54,7 +54,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
 
   const isAllScope = scope === 'all'
 
-  const loadBookings = async () => {
+  const loadBookings = useCallback(async () => {
     setIsLoading(true)
     setErrorMessage('')
 
@@ -68,11 +68,11 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [isAllScope, statusFilter])
 
   useEffect(() => {
     loadBookings()
-  }, [isAllScope, statusFilter])
+  }, [loadBookings])
 
   const sortedBookings = useMemo(
     () => [...bookings].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
@@ -331,24 +331,6 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     }
   }
 
-  const handleCancelFromModal = async () => {
-    if (!selectedBooking) {
-      return
-    }
-
-    setIsActionLoading(true)
-    setErrorMessage('')
-    try {
-      await cancelBooking(selectedBooking.id)
-      closeBookingModal()
-      await loadBookings()
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to cancel booking.')
-    } finally {
-      setIsActionLoading(false)
-    }
-  }
-
   const handleDeleteFromModal = async () => {
     if (!selectedBooking) {
       return
@@ -382,6 +364,11 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
   }
 
   const navigateToTicket = (bookingId) => {
+    if (typeof onRaiseTicket === 'function') {
+      onRaiseTicket(bookingId)
+      return
+    }
+
     const pathname = `/tickets/create?bookingId=${encodeURIComponent(bookingId)}`
     window.history.pushState(null, '', pathname)
     window.dispatchEvent(new PopStateEvent('popstate'))
