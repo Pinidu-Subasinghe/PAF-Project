@@ -57,6 +57,18 @@ function resolveNotificationDestination(notification, authSession) {
     return '/admin-dashboard?tab=manage-resources'
   }
 
+  if (target === 'tickets') {
+    return '/admin-dashboard?tab=tickets'
+  }
+
+  if (target === 'assigned') {
+    return '/technician-dashboard?tab=assigned'
+  }
+
+  if (target === 'my-tickets') {
+    return '/user-dashboard?tab=my-tickets'
+  }
+
   return getDashboardHomePath(role)
 }
 

@@ -16,6 +16,7 @@ import com.example.backend.entity.IncidentTicketComment;
 import com.example.backend.entity.Resource;
 import com.example.backend.enums.IncidentTicketCategory;
 import com.example.backend.enums.IncidentTicketStatus;
+import com.example.backend.enums.NotificationType;
 import com.example.backend.enums.ResourceStatus;
 import com.example.backend.enums.Role;
 import com.example.backend.exception.IncidentTicketCommentNotFoundException;
@@ -48,6 +49,7 @@ public class IncidentTicketService {
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
     private final CloudinaryStorageService cloudinaryStorageService;
+    private final NotificationService notificationService;
 
     public IncidentTicketService(
             IncidentTicketRepository ticketRepository,
@@ -55,7 +57,8 @@ public class IncidentTicketService {
             IncidentTicketCommentRepository commentRepository,
             UserRepository userRepository,
             ResourceRepository resourceRepository,
-            CloudinaryStorageService cloudinaryStorageService
+            CloudinaryStorageService cloudinaryStorageService,
+            NotificationService notificationService
     ) {
         this.ticketRepository = ticketRepository;
         this.attachmentRepository = attachmentRepository;
@@ -63,6 +66,7 @@ public class IncidentTicketService {
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
         this.cloudinaryStorageService = cloudinaryStorageService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -90,6 +94,17 @@ public class IncidentTicketService {
 
         IncidentTicket saved = ticketRepository.save(ticket);
         uploadAttachments(saved, attachments);
+
+        String createdBy = resolveActorDisplayName(actor);
+        String title = "New incident ticket";
+        String message = String.format("%s created ticket #%d: %s", createdBy, saved.getId(), saved.getTitle());
+        notificationService.createNotificationsForRole(
+            Role.ADMIN,
+            NotificationType.TICKET_CREATED,
+            title,
+            message,
+            "tickets"
+        );
 
         return toResponse(findTicket(saved.getId()), actor);
     }
@@ -141,6 +156,7 @@ public class IncidentTicketService {
 
     @Transactional
     public IncidentTicketResponse assignTechnician(Long ticketId, IncidentTicketAssignRequest request, String actorEmail) {
+        AppUser admin = findUserByEmail(actorEmail);
         IncidentTicket ticket = findTicket(ticketId);
         ensureStatus(ticket, IncidentTicketStatus.OPEN, "assign");
 
@@ -161,11 +177,33 @@ public class IncidentTicketService {
 
         IncidentTicket saved = ticketRepository.save(ticket);
 
-        return toResponse(saved, findUserByEmail(actorEmail));
+        String assignedBy = resolveActorDisplayName(admin);
+        String assignmentTitle = "New task assigned";
+        String assignmentMessage = String.format("%s assigned you to ticket #%d: %s", assignedBy, saved.getId(), saved.getTitle());
+        notificationService.createNotificationForUserId(
+            technician.getId(),
+            NotificationType.TICKET_ASSIGNED,
+            assignmentTitle,
+            assignmentMessage,
+            "assigned"
+        );
+
+        String userTitle = "Technician assigned to your ticket";
+        String userMessage = String.format("%s assigned technician %s to ticket #%d", assignedBy, resolveActorDisplayName(technician), saved.getId());
+        notificationService.createNotificationForUserId(
+            saved.getUserId(),
+            NotificationType.TICKET_ASSIGNED,
+            userTitle,
+            userMessage,
+            "my-tickets"
+        );
+
+        return toResponse(saved, admin);
     }
 
     @Transactional
     public IncidentTicketResponse rejectTicket(Long ticketId, IncidentTicketRejectRequest request, String actorEmail) {
+        AppUser admin = findUserByEmail(actorEmail);
         IncidentTicket ticket = findTicket(ticketId);
         ensureStatus(ticket, IncidentTicketStatus.OPEN, "reject");
 
@@ -181,7 +219,18 @@ public class IncidentTicketService {
 
         IncidentTicket saved = ticketRepository.save(ticket);
 
-        return toResponse(saved, findUserByEmail(actorEmail));
+        String rejectedBy = resolveActorDisplayName(admin);
+        String title = "Your ticket was rejected";
+        String message = String.format("%s rejected ticket #%d. Reason: %s", rejectedBy, saved.getId(), saved.getRejectionReason());
+        notificationService.createNotificationForUserId(
+            saved.getUserId(),
+            NotificationType.TICKET_REJECTED,
+            title,
+            message,
+            "my-tickets"
+        );
+
+        return toResponse(saved, admin);
     }
 
     @Transactional
@@ -203,6 +252,24 @@ public class IncidentTicketService {
         }
 
         IncidentTicket saved = ticketRepository.save(ticket);
+
+        String resolvedBy = resolveActorDisplayName(actor);
+        String title = "Ticket resolved";
+        String message = String.format("%s resolved ticket #%d: %s", resolvedBy, saved.getId(), saved.getTitle());
+        notificationService.createNotificationsForRole(
+            Role.ADMIN,
+            NotificationType.TICKET_RESOLVED,
+            title,
+            message,
+            "tickets"
+        );
+        notificationService.createNotificationForUserId(
+            saved.getUserId(),
+            NotificationType.TICKET_RESOLVED,
+            title,
+            message,
+            "my-tickets"
+        );
 
         return toResponse(saved, actor);
     }
@@ -472,6 +539,12 @@ public class IncidentTicketService {
     }
 
     private String resolveAuthorName(AppUser actor) {
+        return actor.getFullName() != null && !actor.getFullName().trim().isEmpty()
+                ? actor.getFullName().trim()
+                : actor.getEmail();
+    }
+
+    private String resolveActorDisplayName(AppUser actor) {
         return actor.getFullName() != null && !actor.getFullName().trim().isEmpty()
                 ? actor.getFullName().trim()
                 : actor.getEmail();
