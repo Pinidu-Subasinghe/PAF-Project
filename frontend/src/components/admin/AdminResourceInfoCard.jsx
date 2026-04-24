@@ -3,6 +3,7 @@ import { deleteResource, getResourceById, updateResource } from '../../api/api'
 import { toast } from 'react-toastify'
 import Swal from 'sweetalert2'
 import 'sweetalert2/dist/sweetalert2.min.css'
+import { hasFormErrors, validateAdminResourceForm } from './AdminResourceValidations'
 
 const typeOptions = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
 const statusOptions = ['ACTIVE', 'OUT_OF_SERVICE']
@@ -20,7 +21,7 @@ function buildFormState(resource) {
   return {
     name: resource.name ?? '',
     type: resource.type ?? 'LECTURE_HALL',
-    capacity: resource.capacity ?? '',
+    capacity: resource.type === 'EQUIPMENT' ? '1' : (resource.capacity ?? ''),
     location: resource.location ?? '',
     availableFrom: resource.availableFrom ?? '08:00',
     availableTo: resource.availableTo ?? '17:00',
@@ -42,6 +43,8 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
   const [formState, setFormState] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [errorMessage, setErrorMessage] = useState('')
   const [pageMessage, setPageMessage] = useState('')
   const [coverImage, setCoverImage] = useState(null)
@@ -61,6 +64,8 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
       setRemovedImageIds([])
       setCoverImage(null)
       setNewAdditionalImages([])
+      setHasTriedSubmit(false)
+      setFieldErrors({})
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to load resource details.')
     } finally {
@@ -80,11 +85,47 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
   const visibleCover = visibleImages.find((img) => img.cover)
   const visibleAdditional = visibleImages.filter((img) => !img.cover)
 
+  const validateAndSetErrors = (
+    nextFormState = formState,
+    nextCoverImage = coverImage,
+    nextNewAdditionalImages = newAdditionalImages,
+    nextVisibleAdditionalCount = visibleAdditional.length,
+  ) => {
+    const errors = validateAdminResourceForm({
+      formState: nextFormState,
+      coverImage: nextCoverImage,
+      extraImages: nextNewAdditionalImages,
+      existingAdditionalImageCount: nextVisibleAdditionalCount,
+    })
+    setFieldErrors(errors)
+    return errors
+  }
+
+  const updateFormState = (updater) => {
+    setFormState((current) => {
+      const nextState = typeof updater === 'function' ? updater(current) : { ...current, ...updater }
+      if (hasTriedSubmit) {
+        validateAndSetErrors(nextState, coverImage, newAdditionalImages)
+      }
+      return nextState
+    })
+  }
+
   const toggleRemoveImage = (publicId) => {
     setRemovedImageIds((current) =>
-      current.includes(publicId)
-        ? current.filter((id) => id !== publicId)
-        : [...current, publicId]
+      {
+        const nextIds = current.includes(publicId)
+          ? current.filter((id) => id !== publicId)
+          : [...current, publicId]
+
+        if (hasTriedSubmit) {
+          const nextVisibleAdditionalCount = (Array.isArray(resource?.images) ? resource.images : [])
+            .filter((img) => img?.publicId && !img.cover && !nextIds.includes(img.publicId)).length
+          validateAndSetErrors(formState, coverImage, newAdditionalImages, nextVisibleAdditionalCount)
+        }
+
+        return nextIds
+      }
     )
   }
 
@@ -92,13 +133,20 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
     event.preventDefault()
     if (!resourceId || !formState) return
 
+    setHasTriedSubmit(true)
+    const validationErrors = validateAndSetErrors()
+    if (hasFormErrors(validationErrors)) {
+      setErrorMessage('Please fix the highlighted fields before submitting.')
+      return
+    }
+
     setIsSubmitting(true)
     setErrorMessage('')
     setPageMessage('')
 
     const payload = {
       ...formState,
-      capacity: Number(formState.capacity),
+      capacity: formState.type === 'EQUIPMENT' ? 1 : Number(formState.capacity),
       description: formState.description?.trim() || '',
     }
 
@@ -245,9 +293,10 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             required
             type="text"
             value={formState.name}
-            onChange={(event) => setFormState((current) => ({ ...current, name: event.target.value }))}
+            onChange={(event) => updateFormState((current) => ({ ...current, name: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
+          {fieldErrors.name && <span className="text-xs text-rose-600">{fieldErrors.name}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -256,9 +305,10 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             value={formState.type}
             onChange={(event) => {
               const newType = event.target.value
-              setFormState((current) => ({
+              updateFormState((current) => ({
                 ...current,
                 type: newType,
+                capacity: newType === 'EQUIPMENT' ? '1' : current.capacity,
                 equipment: newType === 'EQUIPMENT' ? current.equipment : {
                   category: 'PROJECTOR',
                   brand: '',
@@ -275,6 +325,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
               <option key={option} value={option}>{formatEnumLabel(option)}</option>
             ))}
           </select>
+          {fieldErrors.type && <span className="text-xs text-rose-600">{fieldErrors.type}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -284,9 +335,11 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             min="1"
             type="number"
             value={formState.capacity}
-            onChange={(event) => setFormState((current) => ({ ...current, capacity: event.target.value }))}
+            onChange={(event) => updateFormState((current) => ({ ...current, capacity: event.target.value }))}
+            disabled={formState.type === 'EQUIPMENT'}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
+          {fieldErrors.capacity && <span className="text-xs text-rose-600">{fieldErrors.capacity}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700 md:col-span-2">
@@ -295,9 +348,10 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             required
             type="text"
             value={formState.location}
-            onChange={(event) => setFormState((current) => ({ ...current, location: event.target.value }))}
+            onChange={(event) => updateFormState((current) => ({ ...current, location: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
+          {fieldErrors.location && <span className="text-xs text-rose-600">{fieldErrors.location}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -306,9 +360,12 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             required
             type="time"
             value={formState.availableFrom}
-            onChange={(event) => setFormState((current) => ({ ...current, availableFrom: event.target.value }))}
+            min="08:00"
+            max="20:00"
+            onChange={(event) => updateFormState((current) => ({ ...current, availableFrom: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
+          {fieldErrors.availableFrom && <span className="text-xs text-rose-600">{fieldErrors.availableFrom}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -317,32 +374,43 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             required
             type="time"
             value={formState.availableTo}
-            onChange={(event) => setFormState((current) => ({ ...current, availableTo: event.target.value }))}
+            min="08:00"
+            max="20:00"
+            onChange={(event) => updateFormState((current) => ({ ...current, availableTo: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
+          {fieldErrors.availableTo && <span className="text-xs text-rose-600">{fieldErrors.availableTo}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Status
           <select
             value={formState.status}
-            onChange={(event) => setFormState((current) => ({ ...current, status: event.target.value }))}
+            onChange={(event) => updateFormState((current) => ({ ...current, status: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>{formatEnumLabel(option)}</option>
             ))}
           </select>
+          {fieldErrors.status && <span className="text-xs text-rose-600">{fieldErrors.status}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Cover Image (replace)
           <input
             type="file"
-            accept="image/*"
-            onChange={(event) => setCoverImage(event.target.files?.[0] ?? null)}
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+            onChange={(event) => {
+              const selectedCover = event.target.files?.[0] ?? null
+              setCoverImage(selectedCover)
+              if (hasTriedSubmit) {
+                validateAndSetErrors(formState, selectedCover, newAdditionalImages)
+              }
+            }}
             className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
           />
+          {fieldErrors.coverImage && <span className="text-xs text-rose-600">{fieldErrors.coverImage}</span>}
           {!!visibleCover && !coverImage && (
             <span className="text-xs text-slate-500">Current cover will stay unless removed using X above.</span>
           )}
@@ -352,14 +420,18 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
           Additional Images (add)
           <input
             type="file"
-            accept="image/*"
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
             multiple
             onChange={(event) => {
               const files = Array.from(event.target.files || [])
-              setNewAdditionalImages(files.slice(0, 2))
+              setNewAdditionalImages(files)
+              if (hasTriedSubmit) {
+                validateAndSetErrors(formState, coverImage, files)
+              }
             }}
             className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
           />
+          {fieldErrors.extraImages && <span className="text-xs text-rose-600">{fieldErrors.extraImages}</span>}
           {!!newAdditionalImages.length && (
             <span className="text-xs text-slate-500">
               New files: {newAdditionalImages.map((f) => f.name).join(', ')}
@@ -373,9 +445,10 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
           <textarea
             rows="3"
             value={formState.description}
-            onChange={(event) => setFormState((current) => ({ ...current, description: event.target.value }))}
+            onChange={(event) => updateFormState((current) => ({ ...current, description: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
+          {fieldErrors.description && <span className="text-xs text-rose-600">{fieldErrors.description}</span>}
         </label>
 
         {formState.type === 'EQUIPMENT' && (
