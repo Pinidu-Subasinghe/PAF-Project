@@ -66,48 +66,8 @@ export async function requestRegistrationOtp(registerPayload) {
   })
 }
 
-export async function verifyRegistrationOtp(verifyPayload) {
-  return request('/api/v1/auth/register/verify-otp', {
-    method: 'POST',
-    body: verifyPayload,
-  })
-}
-
-export async function loginUser(loginPayload) {
-  return request('/api/v1/auth/login', {
-    method: 'POST',
-    body: loginPayload,
-  })
-}
-
-export async function updateProfile(updatePayload) {
-  return request('/api/v1/users/me', {
-    method: 'PUT',
-    body: updatePayload,
-    headers: getAuthHeader(),
-  })
-}
-
-export async function deleteProfile() {
-  return request('/api/v1/users/me', {
-    method: 'DELETE',
-    headers: getAuthHeader(),
-  })
-}
-
-export async function getMyNotifications() {
-  return request('/api/v1/notifications/me', {
-    headers: getAuthHeader(),
-  })
-}
-
-export async function markNotificationAsRead(notificationId) {
-  return request(`/api/v1/notifications/${notificationId}/read`, {
-    method: 'PATCH',
-    headers: getAuthHeader(),
-  })
-}
-
+// Bhagya : Facilities catalogue + resource management endpoints
+// Used for listing facilities, viewing details, and admin resource CRUD operations.
 export async function getResources(filters = {}) {
   const searchParams = new URLSearchParams()
 
@@ -197,6 +157,15 @@ export async function deleteResource(resourceId) {
   })
 }
 
+export async function getAllResources() {
+  return request('/api/resources', {
+    method: 'GET',
+    headers: getAuthHeader(),
+  })
+}
+
+// Navod : Booking workflow + conflict checking
+// Used for creating bookings, managing decisions, and user/admin booking lifecycle actions.
 export async function createBooking(bookingPayload) {
   return request('/api/bookings', {
     method: 'POST',
@@ -205,6 +174,65 @@ export async function createBooking(bookingPayload) {
   })
 }
 
+export async function getMyBookings() {
+  return request('/api/bookings/my', {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function getAllBookings(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return request(`/api/bookings${query}`, {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function getAllBookingsForAnalytics(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return request(`/api/bookings/all${query}`, {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function clearBookingForAdmin(bookingId) {
+  return request(`/api/bookings/${bookingId}/clear`, {
+    method: 'PUT',
+    headers: getAuthHeader(),
+  })
+}
+
+export async function approveBooking(bookingId) {
+  return request(`/api/bookings/${bookingId}/approve`, {
+    method: 'PUT',
+    headers: getAuthHeader(),
+  })
+}
+
+export async function rejectBooking(bookingId, reason) {
+  return request(`/api/bookings/${bookingId}/reject`, {
+    method: 'PUT',
+    body: { reason },
+    headers: getAuthHeader(),
+  })
+}
+
+export async function cancelBooking(bookingId) {
+  return request(`/api/bookings/${bookingId}`, {
+    method: 'DELETE',
+    headers: getAuthHeader(),
+  })
+}
+
+export async function updateBooking(bookingId, bookingPayload) {
+  return request(`/api/bookings/${bookingId}`, {
+    method: 'PUT',
+    body: bookingPayload,
+    headers: getAuthHeader(),
+  })
+}
+
+// Kavishka : Incident tickets + attachments + technician updates
+// Used for ticket creation, assignment, resolving flow, and ticket discussions/comments.
 function buildTicketFormData(ticketPayload, attachments = []) {
   const formData = new FormData()
   const dataBlob = new Blob([JSON.stringify(ticketPayload)], { type: 'application/json' })
@@ -277,13 +305,6 @@ export async function rejectIncidentTicket(ticketId, payload) {
   })
 }
 
-export async function getAllResources() {
-  return request('/api/resources', {
-    method: 'GET',
-    headers: getAuthHeader(),
-  })
-}
-
 export async function resolveIncidentTicket(ticketId, payload) {
   return request(`/api/v1/tickets/${ticketId}/resolve`, {
     method: 'PUT',
@@ -329,64 +350,71 @@ export async function deleteIncidentTicketComment(commentId) {
   })
 }
 
-export async function getMyBookings() {
-  return request('/api/bookings/my', {
-    headers: getAuthHeader(),
+// Pinidu : Notifications + role management + OAuth integration improvements
+// Used for auth/OAuth-related account flows, in-app notifications, preferences, and admin role operations.
+export async function verifyRegistrationOtp(verifyPayload) {
+  return request('/api/v1/auth/register/verify-otp', {
+    method: 'POST',
+    body: verifyPayload,
   })
 }
 
-export async function getAllBookings(status) {
-  const query = status ? `?status=${encodeURIComponent(status)}` : ''
-  return request(`/api/bookings${query}`, {
-    headers: getAuthHeader(),
+export async function loginUser(loginPayload) {
+  return request('/api/v1/auth/login', {
+    method: 'POST',
+    body: loginPayload,
   })
 }
 
-export async function getAllBookingsForAnalytics(status) {
-  const query = status ? `?status=${encodeURIComponent(status)}` : ''
-  return request(`/api/bookings/all${query}`, {
-    headers: getAuthHeader(),
-  })
-}
-
-export async function clearBookingForAdmin(bookingId) {
-  return request(`/api/bookings/${bookingId}/clear`, {
+export async function updateProfile(updatePayload) {
+  return request('/api/v1/users/me', {
     method: 'PUT',
+    body: updatePayload,
     headers: getAuthHeader(),
   })
 }
 
-export async function approveBooking(bookingId) {
-  return request(`/api/bookings/${bookingId}/approve`, {
-    method: 'PUT',
-    headers: getAuthHeader(),
-  })
-}
-
-export async function rejectBooking(bookingId, reason) {
-  return request(`/api/bookings/${bookingId}/reject`, {
-    method: 'PUT',
-    body: { reason },
-    headers: getAuthHeader(),
-  })
-}
-
-export async function cancelBooking(bookingId) {
-  return request(`/api/bookings/${bookingId}`, {
+export async function deleteProfile() {
+  return request('/api/v1/users/me', {
     method: 'DELETE',
     headers: getAuthHeader(),
   })
 }
 
-export async function updateBooking(bookingId, bookingPayload) {
-  return request(`/api/bookings/${bookingId}`, {
-    method: 'PUT',
-    body: bookingPayload,
+export async function getMyNotifications() {
+  return request('/api/v1/notifications/me', {
     headers: getAuthHeader(),
   })
 }
 
-// Admin user management
+export async function getAllMyNotifications() {
+  return request('/api/v1/notifications/me/all', {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function getMyNotificationPreferences() {
+  return request('/api/v1/notifications/preferences/me', {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function updateMyNotificationPreferences(payload) {
+  return request('/api/v1/notifications/preferences/me', {
+    method: 'PUT',
+    body: payload,
+    headers: getAuthHeader(),
+  })
+}
+
+export async function markNotificationAsRead(notificationId) {
+  return request(`/api/v1/notifications/${notificationId}/read`, {
+    method: 'PATCH',
+    headers: getAuthHeader(),
+  })
+}
+
+// Admin user role management
 export async function getAdminUsers() {
   return request('/api/v1/admin/users', {
     headers: getAuthHeader(),

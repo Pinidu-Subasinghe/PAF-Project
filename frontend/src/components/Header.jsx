@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { HiOutlineBell, HiOutlineUserCircle } from 'react-icons/hi2'
 import NotificationFloatingModal from './NotificationFloatingModal'
-import { getMyNotifications, markNotificationAsRead } from '../api/api'
+import {
+  getMyNotificationPreferences,
+  getMyNotifications,
+  markNotificationAsRead,
+  updateMyNotificationPreferences,
+} from '../api/api'
+import { toast } from 'react-toastify'
 import uniPilotBrandLogo from '../assets/UniPilot2-nobg.png'
 import {
   authSessionChangeEvent,
@@ -18,9 +24,21 @@ const navLinks = [
   { label: 'Deliverables', href: '/#deliverables' },
 ]
 
+const DEFAULT_NOTIFICATION_PREFERENCES = {
+  profileNotificationsEnabled: true,
+  bookingNotificationsEnabled: true,
+  ticketNotificationsEnabled: true,
+}
+
 function navigateTo(pathname) {
   window.history.pushState(null, '', pathname)
   window.dispatchEvent(new PopStateEvent('popstate'))
+}
+
+function buildAllNotificationsPath(authSession) {
+  const fallbackName = authSession?.email?.split('@')?.[0] || 'user'
+  const baseName = authSession?.fullName?.trim() || fallbackName
+  return `/${encodeURIComponent(baseName)}/All%20notifications`
 }
 
 function getDashboardHomePath(role) {
@@ -57,6 +75,18 @@ function resolveNotificationDestination(notification, authSession) {
     return '/admin-dashboard?tab=manage-resources'
   }
 
+  if (target === 'tickets') {
+    return '/admin-dashboard?tab=tickets'
+  }
+
+  if (target === 'assigned') {
+    return '/technician-dashboard?tab=assigned'
+  }
+
+  if (target === 'my-tickets') {
+    return '/user-dashboard?tab=my-tickets'
+  }
+
   return getDashboardHomePath(role)
 }
 
@@ -69,6 +99,10 @@ export default function Header() {
   const [notificationsTotal, setNotificationsTotal] = useState(0)
   const [isNotificationsLoading, setIsNotificationsLoading] = useState(false)
   const [notificationsError, setNotificationsError] = useState('')
+  const [notificationPreferences, setNotificationPreferences] = useState(DEFAULT_NOTIFICATION_PREFERENCES)
+  const [isPreferencesLoading, setIsPreferencesLoading] = useState(false)
+  const [isPreferencesSaving, setIsPreferencesSaving] = useState(false)
+  const [preferencesErrorMessage, setPreferencesErrorMessage] = useState('')
   const [authSession, setAuthSession] = useState(() => readAuthSession())
   const profileMenuRef = useRef(null)
   const notificationMenuRef = useRef(null)
@@ -158,6 +192,60 @@ export default function Header() {
     }
   }, [authSession?.token])
 
+  const loadNotificationPreferences = useCallback(async () => {
+    if (!authSession?.token) {
+      setNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES)
+      setPreferencesErrorMessage('')
+      return
+    }
+
+    setIsPreferencesLoading(true)
+    setPreferencesErrorMessage('')
+    try {
+      const response = await getMyNotificationPreferences()
+      setNotificationPreferences({
+        profileNotificationsEnabled: Boolean(response?.profileNotificationsEnabled),
+        bookingNotificationsEnabled: Boolean(response?.bookingNotificationsEnabled),
+        ticketNotificationsEnabled: Boolean(response?.ticketNotificationsEnabled),
+      })
+    } catch (error) {
+      setPreferencesErrorMessage(
+        error instanceof Error ? error.message : 'Unable to load notification settings right now.',
+      )
+    } finally {
+      setIsPreferencesLoading(false)
+    }
+  }, [authSession?.token])
+
+  const handleSaveNotificationPreferences = useCallback(async (nextPreferences) => {
+    if (!authSession?.token || !nextPreferences) {
+      return
+    }
+
+    setIsPreferencesSaving(true)
+    setPreferencesErrorMessage('')
+    try {
+      const response = await updateMyNotificationPreferences({
+        profileNotificationsEnabled: Boolean(nextPreferences.profileNotificationsEnabled),
+        bookingNotificationsEnabled: Boolean(nextPreferences.bookingNotificationsEnabled),
+        ticketNotificationsEnabled: Boolean(nextPreferences.ticketNotificationsEnabled),
+      })
+
+      setNotificationPreferences({
+        profileNotificationsEnabled: Boolean(response?.profileNotificationsEnabled),
+        bookingNotificationsEnabled: Boolean(response?.bookingNotificationsEnabled),
+        ticketNotificationsEnabled: Boolean(response?.ticketNotificationsEnabled),
+      })
+      toast.success('Notification settings updated successfully')
+    } catch (error) {
+      setPreferencesErrorMessage(
+        error instanceof Error ? error.message : 'Unable to update notification settings right now.',
+      )
+    } finally {
+      setIsPreferencesSaving(false)
+    }
+  }, [authSession?.token])
+
   useEffect(() => {
     loadNotifications()
     return () => {
@@ -170,6 +258,24 @@ export default function Header() {
     window.addEventListener('unipilot-notification-refresh', handler)
     return () => window.removeEventListener('unipilot-notification-refresh', handler)
   }, [loadNotifications])
+
+  useEffect(() => {
+    const handleViewMoreNotifications = () => {
+      if (!authSession?.token) {
+        navigateTo('/login')
+        return
+      }
+
+      setIsNotificationMenuOpen(false)
+      setIsMenuOpen(false)
+      navigateTo(buildAllNotificationsPath(authSession))
+    }
+
+    window.addEventListener('unipilot-notification-view-more', handleViewMoreNotifications)
+    return () => {
+      window.removeEventListener('unipilot-notification-view-more', handleViewMoreNotifications)
+    }
+  }, [authSession])
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -262,6 +368,12 @@ export default function Header() {
         unreadBadgeLabel={unreadBadgeLabel}
         onNavigate={handleNotificationNavigate}
         total={notificationsTotal}
+        preferences={notificationPreferences}
+        isPreferencesLoading={isPreferencesLoading}
+        isPreferencesSaving={isPreferencesSaving}
+        preferencesErrorMessage={preferencesErrorMessage}
+        onOpenPreferences={loadNotificationPreferences}
+        onSavePreferences={handleSaveNotificationPreferences}
       />
     </div>
   )

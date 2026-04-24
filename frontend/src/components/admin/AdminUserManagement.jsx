@@ -318,18 +318,18 @@ export default function AdminUserManagement() {
           ) : (
             <div className="grid gap-4">
               {filteredUsers.map((user) => (
-                <div key={user.id} className="rounded-2xl border border-slate-200 bg-white p-4 flex items-center justify-between">
-                  <div>
+                <div key={user.id} className="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-900">{user.fullName || user.email}</p>
-                    <p className="mt-1 text-xs text-slate-500">{user.email}</p>
+                    <p className="mt-1 break-words text-xs text-slate-500">{user.email}</p>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end">
                     <select
                       value={user.role}
                       onChange={(e) => handleRoleChange(user, e.target.value)}
                       disabled={updatingIds.includes(user.id)}
-                      className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                      className="min-w-[9rem] rounded-xl border border-slate-300 px-3 py-2 text-sm"
                     >
                       <option value="USER">{formatEnumLabel('USER')}</option>
                       <option value="ADMIN">{formatEnumLabel('ADMIN')}</option>
@@ -340,7 +340,7 @@ export default function AdminUserManagement() {
                       type="button"
                       onClick={() => handleDelete(user)}
                       disabled={deletingIds.includes(user.id)}
-                      className="rounded-full p-2 text-rose-600 hover:bg-rose-50"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full text-rose-600 hover:bg-rose-50"
                       aria-label={`Delete ${user.email}`}
                     >
                       <HiOutlineTrash className="h-5 w-5" />
