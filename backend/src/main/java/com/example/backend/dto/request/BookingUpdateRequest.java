@@ -9,6 +9,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 public record BookingUpdateRequest(
+        @NotNull(message = "Resource ID is required")
+        Long resourceId,
+
         @NotNull(message = "Date is required")
         LocalDate date,
 
