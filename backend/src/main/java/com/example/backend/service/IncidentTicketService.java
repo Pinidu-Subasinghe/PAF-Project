@@ -14,7 +14,9 @@ import com.example.backend.entity.IncidentTicket;
 import com.example.backend.entity.IncidentTicketAttachment;
 import com.example.backend.entity.IncidentTicketComment;
 import com.example.backend.entity.Resource;
+import com.example.backend.enums.IncidentTicketCategory;
 import com.example.backend.enums.IncidentTicketStatus;
+import com.example.backend.enums.ResourceStatus;
 import com.example.backend.enums.Role;
 import com.example.backend.exception.IncidentTicketCommentNotFoundException;
 import com.example.backend.exception.IncidentTicketNotFoundException;
@@ -150,6 +152,13 @@ public class IncidentTicketService {
         ticket.setAssignedToUserId(technician.getId());
         ticket.setStatus(IncidentTicketStatus.IN_PROGRESS);
         ticket.setRejectionReason(null);
+
+        if (ticket.getCategory() == IncidentTicketCategory.RESOURCE && ticket.getResourceId() != null) {
+            Resource resource = findResource(ticket.getResourceId());
+            resource.setStatus(ResourceStatus.OUT_OF_SERVICE);
+            resourceRepository.save(resource);
+        }
+
         IncidentTicket saved = ticketRepository.save(ticket);
 
         return toResponse(saved, findUserByEmail(actorEmail));
@@ -163,6 +172,13 @@ public class IncidentTicketService {
         ticket.setStatus(IncidentTicketStatus.REJECTED);
         ticket.setRejectionReason(request.reason().trim());
         ticket.setAssignedToUserId(null);
+
+        if (ticket.getCategory() == IncidentTicketCategory.RESOURCE && ticket.getResourceId() != null) {
+            Resource resource = findResource(ticket.getResourceId());
+            resource.setStatus(ResourceStatus.ACTIVE);
+            resourceRepository.save(resource);
+        }
+
         IncidentTicket saved = ticketRepository.save(ticket);
 
         return toResponse(saved, findUserByEmail(actorEmail));
@@ -179,6 +195,13 @@ public class IncidentTicketService {
 
         ticket.setStatus(IncidentTicketStatus.RESOLVED);
         ticket.setResolutionNotes(request.resolutionNotes().trim());
+
+        if (ticket.getCategory() == IncidentTicketCategory.RESOURCE && ticket.getResourceId() != null) {
+            Resource resource = findResource(ticket.getResourceId());
+            resource.setStatus(ResourceStatus.ACTIVE);
+            resourceRepository.save(resource);
+        }
+
         IncidentTicket saved = ticketRepository.save(ticket);
 
         return toResponse(saved, actor);
@@ -199,6 +222,13 @@ public class IncidentTicketService {
 
         ticket.setStatus(IncidentTicketStatus.CLOSED);
         ticket.setClosedAt(Instant.now());
+
+        if (ticket.getCategory() == IncidentTicketCategory.RESOURCE && ticket.getResourceId() != null) {
+            Resource resource = findResource(ticket.getResourceId());
+            resource.setStatus(ResourceStatus.ACTIVE);
+            resourceRepository.save(resource);
+        }
+
         IncidentTicket saved = ticketRepository.save(ticket);
         return toResponse(saved, actor);
     }
