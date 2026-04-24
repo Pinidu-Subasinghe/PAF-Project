@@ -69,6 +69,76 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const downloadMenuRef = useRef(null)
   const [userViewTab, setUserViewTab] = useState('list')
   const [currentMonth, setCurrentMonth] = useState(new Date())
+
+  // Reminder system state
+  const [reminders, setReminders] = useState(() => {
+    const saved = localStorage.getItem('booking_reminders')
+    return saved ? JSON.parse(saved) : []
+  })
+  const [showReminderModal, setShowReminderModal] = useState(false)
+  const [reminderBooking, setReminderBooking] = useState(null)
+  const [reminderOffset, setReminderOffset] = useState('30')
+  const [hoveredDay, setHoveredDay] = useState(null)
+  const hoverTimeoutRef = useRef(null)
+
+  // Persist reminders to localStorage
+  useEffect(() => {
+    localStorage.setItem('booking_reminders', JSON.stringify(reminders))
+  }, [reminders])
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission()
+    }
+  }, [])
+
+  // Calculate reminder trigger time
+  const getReminderTriggerTime = (reminder) => {
+    const bookingDateTime = new Date(`${reminder.date}T${reminder.startTime}`)
+    
+    const offsets = {
+      '10': 10 * 60 * 1000,
+      '30': 30 * 60 * 1000,
+      '60': 60 * 60 * 1000,
+      '1440': 24 * 60 * 60 * 1000
+    }
+
+    return new Date(bookingDateTime.getTime() - (offsets[reminder.offset] || 0))
+  }
+
+  // Check reminders every 30 seconds and trigger notifications
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date()
+
+      reminders.forEach((reminder) => {
+        const triggerTime = getReminderTriggerTime(reminder)
+
+        // Prevent duplicate firing - only trigger if not already triggered
+        if (!reminder.triggered && now >= triggerTime) {
+          // Show browser notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Booking Reminder', {
+              body: `${reminder.resourceName} at ${reminder.startTime} on ${reminder.date}`,
+              icon: '/favicon.ico',
+              tag: `booking-${reminder.id}`
+            })
+          }
+
+          // Mark as triggered
+          setReminders(prev =>
+            prev.map(r =>
+              r.id === reminder.id ? { ...r, triggered: true } : r
+            )
+          )
+        }
+      })
+    }, 30000) // Check every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [reminders])
+
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -839,6 +909,128 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     }
   }
 
+  // Reminder system functions
+  const openReminderModal = (booking) => {
+    setReminderBooking(booking)
+    // Check if reminder already exists for this booking
+    const existing = reminders.find(r => r.bookingId === booking.id)
+    if (existing) {
+      setReminderOffset(existing.offset)
+    } else {
+      setReminderOffset('30')
+    }
+    setShowReminderModal(true)
+  }
+
+  const closeReminderModal = () => {
+    setShowReminderModal(false)
+    setReminderBooking(null)
+    setReminderOffset('30')
+  }
+
+  const saveReminder = () => {
+    if (!reminderBooking) return
+
+    // If "Clear reminder" selected, remove existing reminder for this booking
+    if (reminderOffset === '0') {
+      setReminders(prev => prev.filter(r => r.bookingId !== reminderBooking.id))
+      setShowReminderModal(false)
+      setReminderBooking(null)
+
+      Swal.fire({
+        title: 'Reminder Cleared',
+        text: 'Reminder has been removed for this booking',
+        icon: 'info',
+        timer: 2000,
+        showConfirmButton: false
+      })
+      return
+    }
+
+    const offsetLabels = {
+      '10': '10 minutes before',
+      '30': '30 minutes before',
+      '60': '1 hour before',
+      '1440': '1 day before'
+    }
+
+    // Remove any existing reminder for this booking first
+    const filteredReminders = reminders.filter(r => r.bookingId !== reminderBooking.id)
+
+    const newReminder = {
+      id: Date.now(),
+      bookingId: reminderBooking.id,
+      resourceName: reminderBooking.resourceName,
+      resourceType: reminderBooking.resourceType,
+      date: reminderBooking.date?.split('T')[0] || reminderBooking.date,
+      startTime: reminderBooking.startTime,
+      offset: reminderOffset,
+      offsetLabel: offsetLabels[reminderOffset],
+      triggered: false,
+      createdAt: new Date().toISOString()
+    }
+
+    setReminders([...filteredReminders, newReminder])
+    setShowReminderModal(false)
+    setReminderBooking(null)
+
+    Swal.fire({
+      title: 'Reminder Set!',
+      text: `You'll be reminded ${offsetLabels[reminderOffset]}`,
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false
+    })
+  }
+
+  const getExistingReminder = (bookingId) => {
+    return reminders.find(r => r.bookingId === bookingId)
+  }
+
+  const deleteReminder = (reminderId) => {
+    setReminders(prev => prev.filter(r => r.id !== reminderId))
+  }
+
+  const getReminderOffsetLabel = (offset) => {
+    const labels = {
+      '10': '10 min before',
+      '30': '30 min before',
+      '60': '1 hour before',
+      '1440': '1 day before'
+    }
+    return labels[offset] || `${offset} min before`
+  }
+
+  // Hover locking for calendar cells
+  const handleDayHover = (dayKey) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredDay(dayKey)
+    }, 150)
+  }
+
+  const handleDayLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+    }
+    // Small delay before clearing to allow moving to overlay
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredDay(null)
+    }, 200)
+  }
+
+  const handleOverlayEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+    }
+  }
+
+  const handleOverlayLeave = () => {
+    setHoveredDay(null)
+  }
+
   const navigateMonth = (direction) => {
     setCurrentMonth(prev => {
       const newDate = new Date(prev)
@@ -1028,6 +1220,54 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       {/* CALENDAR VIEW - Only for User */}
       {!isAllScope && userViewTab === 'calendar' && (
         <div className="space-y-4">
+          {/* Upcoming Reminders Panel */}
+          {(() => {
+            const upcomingReminders = reminders
+              .filter(r => new Date(r.date) >= new Date(new Date().toDateString()))
+              .sort((a, b) => new Date(a.date) - new Date(b.date))
+              .slice(0, 5)
+
+            if (upcomingReminders.length === 0) return null
+
+            return (
+              <div className="rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50 p-4 shadow-sm">
+                <div className="mb-3 flex items-center gap-2">
+                  <svg className="h-5 w-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <h4 className="font-semibold text-violet-900">Upcoming Reminders</h4>
+                </div>
+                <div className="space-y-2">
+                  {upcomingReminders.map((reminder) => (
+                    <div
+                      key={reminder.id}
+                      className="flex items-center justify-between rounded-lg bg-white px-3 py-2 shadow-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-slate-700">{reminder.resourceName}</span>
+                        <span className="text-xs text-slate-500">
+                          {reminder.date} • {reminder.startTime}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-violet-600 font-medium">{reminder.offsetLabel}</span>
+                        <button
+                          onClick={() => deleteReminder(reminder.id)}
+                          className="text-slate-400 hover:text-rose-500 transition"
+                          title="Delete reminder"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Calendar Header */}
           <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-sky-100 to-blue-50 p-4 shadow-sm shadow-sky-200/50">
             <button
@@ -1092,8 +1332,12 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                         <div className={`mb-1 text-right text-sm font-medium ${isToday ? 'text-blue-600' : 'text-slate-700'}`}>
                           {day}
                         </div>
-                        {/* Day cell with group hover - all bookings expand together */}
-                        <div className="group/day relative min-h-[60px]">
+                        {/* Day cell with hover locking */}
+                        <div
+                          className="relative min-h-[60px] cursor-pointer"
+                          onMouseEnter={() => handleDayHover(`${year}-${month}-${day}`)}
+                          onMouseLeave={handleDayLeave}
+                        >
                           {/* Normal view - max 2 bookings */}
                           <div className="space-y-1">
                             {dayBookings.slice(0, 2).map((booking) => (
@@ -1112,25 +1356,45 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                                 +{dayBookings.length - 2} more
                               </div>
                             )}
+                            {/* Reminder indicator */}
+                            {(() => {
+                              const dateString = formatDate(year, month, day)
+                              const dayReminders = reminders.filter(r => r.date === dateString)
+                              if (dayReminders.length === 0) return null
+                              return (
+                                <div className="mt-1 flex items-center gap-1 text-[10px] text-violet-600">
+                                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span className="font-medium">{dayReminders.length}</span>
+                                </div>
+                              )
+                            })()}
                           </div>
 
                           {/* Hover overlay - appears fixed above the cell, shows all bookings */}
-                          {dayBookings.length > 0 && (
-                            <div className="pointer-events-none absolute bottom-full left-1/4 z-50 mb-2 hidden w-[260px] -translate-x-1/2 transform flex-col gap-2.5 rounded-lg border border-slate-300 bg-white p-[18px] shadow-lg group-hover/day:flex">
+                          {dayBookings.length > 0 && hoveredDay === `${year}-${month}-${day}` && (
+                            <div
+                              className="pointer-events-auto absolute bottom-full left-1/4 z-50 mb-3 flex w-[340px] -translate-x-1/2 transform flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-2xl transition-all duration-300"
+                              onMouseEnter={handleOverlayEnter}
+                              onMouseLeave={handleOverlayLeave}
+                            >
+                              {/* Invisible hover bridge connecting cell to overlay */}
+                              <div className="absolute -bottom-4 left-0 right-0 h-4 bg-transparent" />
                               {/* Arrow pointing down */}
                               <div className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-slate-200 bg-white" />
                               {/* All bookings in this day */}
-                              <div className="relative z-10 max-h-[100px] overflow-y-auto space-y-2">
+                              <div className="relative z-10 max-h-[180px] overflow-y-auto space-y-3">
                                 {dayBookings.map((booking, idx) => {
                                   const statusGlow = booking.status === 'PENDING' ? 'shadow-amber-300' : booking.status === 'APPROVED' ? 'shadow-emerald-200' : 'shadow-rose-200'
                                   return (
                                     <div
                                       key={booking.id}
-                                      className={`rounded border px-[10px] py-[6px] text-sm ${getStatusColors(booking.status)} ${statusGlow} shadow-sm`}
+                                      className={`rounded-lg border-2 px-3 py-2 text-sm ${getStatusColors(booking.status)} ${statusGlow} shadow-sm`}
                                     >
-                                      <div className="flex items-center justify-between gap-2">
-                                        <span className="font-medium text-sm">{booking.resourceName}</span>
-                                        <span className={`rounded-full px-[6px] py-1 text-[11px] font-semibold ${
+                                      <div className="flex items-center justify-between gap-3">
+                                        <span className="font-semibold text-sm">{booking.resourceName}</span>
+                                        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${
                                           booking.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
                                           booking.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
                                           'bg-rose-100 text-rose-700'
@@ -1138,11 +1402,22 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                                           {booking.status}
                                         </span>
                                       </div>
-                                      <div className="mt-1 text-xs opacity-80">
+                                      <div className="mt-1.5 text-sm opacity-90 font-medium">
                                         {booking.startTime} - {booking.endTime}
                                       </div>
-                                      <div className="text-xs opacity-60">
-                                        {booking.resourceType}
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs opacity-60">{booking.resourceType}</span>
+                                        {booking.status === 'APPROVED' && (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              openReminderModal(booking)
+                                            }}
+                                            className="text-xs text-violet-600 hover:text-violet-800 font-semibold hover:underline px-2 py-1 rounded hover:bg-violet-50 transition"
+                                          >
+                                            🔔 Set Reminder
+                                          </button>
+                                        )}
                                       </div>
                                     </div>
                                   )
@@ -1183,6 +1458,64 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
             <div className="flex items-center gap-1.5">
               <div className="h-3 w-3 rounded-full bg-rose-400" />
               <span className="text-slate-600">Rejected</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reminder Modal */}
+      {showReminderModal && reminderBooking && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-4 sm:items-center sm:py-6">
+          <div className="w-full max-w-md rounded-2xl border border-violet-200 bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-900">Set Reminder</h3>
+              <button
+                onClick={closeReminderModal}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4 rounded-lg bg-slate-50 p-3">
+              <p className="text-sm font-medium text-slate-700">{reminderBooking.resourceName}</p>
+              <p className="text-xs text-slate-500">
+                {reminderBooking.date?.split('T')[0]} • {reminderBooking.startTime} - {reminderBooking.endTime}
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Remind me before
+              </label>
+              <select
+                value={reminderOffset}
+                onChange={(e) => setReminderOffset(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+              >
+                <option value="10">10 minutes before</option>
+                <option value="30">30 minutes before</option>
+                <option value="60">1 hour before</option>
+                <option value="1440">1 day before</option>
+                <option value="0">Clear reminder</option>
+              </select>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={closeReminderModal}
+                className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveReminder}
+                className="flex-1 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-500/30 transition hover:shadow-xl"
+              >
+                Save Reminder
+              </button>
             </div>
           </div>
         </div>
