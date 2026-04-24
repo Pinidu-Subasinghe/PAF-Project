@@ -112,9 +112,7 @@ function App() {
   const showScrollToTop = !isAuthPage && !isDashboardPage
   const showFooter = showChrome && !isDashboardPage
 
-  const appShellClass = isDashboardPage
-    ? 'h-screen'
-    : 'min-h-screen'
+  const appShellClass = 'min-h-screen'
 
   return (
     <div className={`${appShellClass} bg-slate-50 text-slate-900 flex flex-col`}>

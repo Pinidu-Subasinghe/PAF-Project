@@ -801,14 +801,14 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
   }, [])
 
   return (
-    <section className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 md:p-8">
+    <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-900/5 sm:p-6 md:p-8">
       {/* Toggle Switch for Admin */}
       {isAllScope && (
         <div className="mb-6 flex items-center justify-start">
           <div className="flex bg-slate-100 rounded-full p-1">
             <button
               onClick={() => setViewMode('bookings')}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+              className={`px-3 py-2 rounded-full text-xs font-semibold transition-all duration-200 sm:px-4 sm:text-sm ${
                 viewMode === 'bookings'
                   ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30'
                   : 'text-slate-600 hover:text-slate-900'
@@ -818,7 +818,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
             </button>
             <button
               onClick={() => setViewMode('analytics')}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+              className={`px-3 py-2 rounded-full text-xs font-semibold transition-all duration-200 sm:px-4 sm:text-sm ${
                 viewMode === 'analytics'
                   ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30'
                   : 'text-slate-600 hover:text-slate-900'
@@ -834,15 +834,15 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       {viewMode === 'bookings' && (
         <>
           {isAllScope && (
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-3">
+            <div className="mb-5 grid gap-4 lg:grid-cols-[1fr_auto]">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                   <label htmlFor="statusFilter" className="text-sm font-medium text-slate-700">Status</label>
                   <select
                     id="statusFilter"
                     value={statusFilter}
                     onChange={(event) => setStatusFilter(event.target.value)}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 sm:w-auto"
                   >
                     <option value="">All</option>
                     <option value="PENDING">Pending</option>
@@ -851,13 +851,13 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                   </select>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                   <label htmlFor="resourceTypeFilter" className="text-sm font-medium text-slate-700">Resource Type</label>
                   <select
                     id="resourceTypeFilter"
                     value={resourceTypeFilter}
                     onChange={(event) => setResourceTypeFilter(event.target.value)}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 sm:w-auto"
                   >
                     <option value="">All</option>
                     <option value="LAB">Lab</option>
@@ -874,7 +874,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                 value={resourceIdSearch}
                 onChange={(event) => setResourceIdSearch(event.target.value)}
                 placeholder="Search by ID or name..."
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 placeholder:text-slate-400"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 placeholder:text-slate-400 lg:w-72"
               />
             </div>
           )}
@@ -935,8 +935,8 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       )}
 
       {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-2xl rounded-4xl border border-teal-100 bg-white p-8 shadow-xl shadow-teal-900/5 md:p-10">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-4 sm:items-center sm:py-6">
+          <div className="w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl border border-teal-100 bg-white p-4 shadow-xl shadow-teal-900/5 sm:max-h-[calc(100dvh-3rem)] sm:p-8 md:p-10">
             <div className="flex flex-col justify-between gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-start">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">Booking Request</p>
@@ -1149,14 +1149,14 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
               </>
             )}
 
-            <div className="mt-6 flex flex-wrap justify-end gap-2">
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
               {isEditing ? (
                 <>
                   <button
                     type="button"
                     disabled={isActionLoading}
                     onClick={handleEditSubmit}
-                    className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                   >
                     {isActionLoading ? 'Saving...' : 'Save Changes'}
                   </button>
@@ -1165,7 +1165,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                     type="button"
                     disabled={isActionLoading}
                     onClick={handleCancelEdit}
-                    className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                   >
                     Cancel
                   </button>
@@ -1181,7 +1181,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                             type="button"
                             disabled={isActionLoading}
                             onClick={() => handleApprove(selectedBooking.id)}
-                            className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="w-full rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                           >
                             Approve
                           </button>
@@ -1189,7 +1189,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                             type="button"
                             disabled={isActionLoading}
                             onClick={() => handleReject(selectedBooking.id)}
-                            className="rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="w-full rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                           >
                             Reject
                           </button>
@@ -1201,7 +1201,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                           type="button"
                           disabled={isActionLoading || selectedBooking.status === 'PENDING'}
                           onClick={() => selectedBooking.status !== 'PENDING' && handleClear(selectedBooking.id)}
-                          className={`rounded-full border px-5 py-2.5 text-sm font-semibold transition ${
+                          className={`w-full rounded-full border px-5 py-2.5 text-sm font-semibold transition sm:w-auto ${
                             selectedBooking.status === 'PENDING'
                               ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
                               : 'border-slate-300 text-slate-700 hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60'
@@ -1223,7 +1223,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                         <button
                           type="button"
                           onClick={handleStartEdit}
-                          className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                          className="w-full rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 sm:w-auto"
                         >
                           Update
                         </button>
@@ -1234,7 +1234,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                           type="button"
                           disabled={isActionLoading}
                           onClick={handleDeleteFromModal}
-                          className="rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="w-full rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                         >
                           {isActionLoading ? 'Deleting...' : 'Delete'}
                         </button>
@@ -1244,7 +1244,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                         <button
                           type="button"
                           onClick={() => navigateToTicket(selectedBooking.id)}
-                          className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700"
+                          className="w-full rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700 sm:w-auto"
                         >
                           Raise Ticket
                         </button>
@@ -1255,7 +1255,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                   <button
                     type="button"
                     onClick={closeBookingModal}
-                    className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+                    className="w-full rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 sm:w-auto"
                   >
                     Close
                   </button>
@@ -1272,15 +1272,15 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       {viewMode === 'analytics' && (
         <div className="space-y-6">
           {/* Analytics Filters */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-4 rounded-xl bg-slate-50 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <label htmlFor="analyticsStatusFilter" className="text-sm font-medium text-slate-700">Status</label>
                 <select
                   id="analyticsStatusFilter"
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 sm:w-auto"
                 >
                   <option value="">All</option>
                   <option value="PENDING">Pending</option>
@@ -1289,13 +1289,13 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                 </select>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <label htmlFor="analyticsResourceTypeFilter" className="text-sm font-medium text-slate-700">Resource Type</label>
                 <select
                   id="analyticsResourceTypeFilter"
                   value={resourceTypeFilter}
                   onChange={(event) => setResourceTypeFilter(event.target.value)}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 sm:w-auto"
                 >
                   <option value="">All</option>
                   <option value="LAB">Lab</option>
@@ -1305,29 +1305,29 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                 </select>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <label className="text-sm font-medium text-slate-700">Date Range</label>
                 <input
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 sm:w-auto"
                 />
                 <span className="text-slate-500">to</span>
                 <input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 sm:w-auto"
                 />
               </div>
             </div>
 
             {/* Download Report Dropdown */}
-            <div className="relative" ref={downloadMenuRef}>
+            <div className="relative w-full lg:w-auto" ref={downloadMenuRef}>
               <button
                 onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white transition hover:shadow-lg hover:shadow-violet-500/30"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white transition hover:shadow-lg hover:shadow-violet-500/30 lg:w-auto"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -1339,7 +1339,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
               </button>
 
               {showDownloadMenu && (
-                <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-xl border border-slate-200 overflow-hidden z-10">
+                <div className="absolute left-0 z-10 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl lg:left-auto lg:right-0 lg:w-48">
                   <button
                     onClick={() => {
                       exportToCSV()
