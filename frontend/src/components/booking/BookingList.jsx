@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import Swal from 'sweetalert2'
 import 'sweetalert2/dist/sweetalert2.min.css'
 import {
@@ -16,10 +16,14 @@ import {
   Line,
   ResponsiveContainer,
 } from 'recharts'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import {
   approveBooking,
   cancelBooking,
+  clearBookingForAdmin,
   getAllBookings,
+  getAllBookingsForAnalytics,
   getAllResources,
   getMyBookings,
   rejectBooking,
@@ -55,11 +59,14 @@ function formatDateTime(date, startTime, endTime) {
 
 export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const [bookings, setBookings] = useState([])
+  const [allBookingsForAnalytics, setAllBookingsForAnalytics] = useState([])
   const [statusFilter, setStatusFilter] = useState('')
   const [resourceTypeFilter, setResourceTypeFilter] = useState('')
   const [resourceIdSearch, setResourceIdSearch] = useState('')
   const [viewMode, setViewMode] = useState('bookings')
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false)
+  const downloadMenuRef = useRef(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -121,10 +128,20 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     setErrorMessage('')
 
     try {
-      const response = isAllScope
-        ? await getAllBookings(statusFilter || undefined)
-        : await getMyBookings()
-      setBookings(Array.isArray(response) ? response : [])
+      if (isAllScope) {
+        // For admin: fetch filtered bookings (excludes cleared) for table
+        const response = await getAllBookings(statusFilter || undefined)
+        setBookings(Array.isArray(response) ? response : [])
+
+        // Also fetch all bookings including cleared for analytics
+        const allResponse = await getAllBookingsForAnalytics(statusFilter || undefined)
+        setAllBookingsForAnalytics(Array.isArray(allResponse) ? allResponse : [])
+      } else {
+        // For user: just fetch my bookings
+        const response = await getMyBookings()
+        setBookings(Array.isArray(response) ? response : [])
+        setAllBookingsForAnalytics([])
+      }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to load bookings right now.')
     } finally {
@@ -136,6 +153,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     loadBookings()
   }, [loadBookings])
 
+  // Visible bookings for Admin table (backend filters cleared bookings + applies filters)
   const sortedBookings = useMemo(
     () => {
       let filtered = [...bookings]
@@ -248,6 +266,28 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     }
   }
 
+  // Clear booking for admin (persistent via backend)
+  const handleClear = async (bookingId) => {
+    setIsActionLoading(true)
+    try {
+      await clearBookingForAdmin(bookingId)
+      await loadBookings() // Reload to reflect cleared status
+      closeBookingModal()
+      Swal.fire({
+        title: 'Cleared',
+        text: 'Booking cleared from view. Data retained for analytics.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to clear booking.')
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // Legacy handleCancel for user cancel (still uses API)
   const handleCancel = async (bookingId) => {
     setIsActionLoading(true)
     setErrorMessage('')
@@ -467,13 +507,15 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
-  // Analytics data calculations
+  // Analytics data calculations - uses ALL bookings (including cleared ones) for accurate analytics
   const analyticsData = useMemo(() => {
-    const total = sortedBookings.length
-    const approved = sortedBookings.filter(b => b.status === 'APPROVED').length
-    const pending = sortedBookings.filter(b => b.status === 'PENDING').length
-    const rejected = sortedBookings.filter(b => b.status === 'REJECTED').length
-    const cancelled = sortedBookings.filter(b => b.status === 'CANCELLED').length
+    const analyticsSource = isAllScope && allBookingsForAnalytics.length > 0 ? allBookingsForAnalytics : bookings
+
+    const total = analyticsSource.length
+    const approved = analyticsSource.filter(b => b.status === 'APPROVED').length
+    const pending = analyticsSource.filter(b => b.status === 'PENDING').length
+    const rejected = analyticsSource.filter(b => b.status === 'REJECTED').length
+    const cancelled = analyticsSource.filter(b => b.status === 'CANCELLED').length
 
     // Bookings by status for pie chart
     const statusData = [
@@ -483,29 +525,43 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       { name: 'Cancelled', value: cancelled, color: '#64748b' },
     ].filter(item => item.value > 0)
 
-    // Bookings by resource type for bar chart
+    // Bookings by resource type for bar chart (uses ALL bookings)
     const resourceTypeData = Object.entries(
-      sortedBookings.reduce((acc, booking) => {
+      analyticsSource.reduce((acc, booking) => {
         const type = resourceTypeDisplayNames[booking.resourceType] || booking.resourceType
         acc[type] = (acc[type] || 0) + 1
         return acc
       }, {})
     ).map(([name, value]) => ({ name, value }))
 
-    // Bookings over time (last 30 days) for line chart
-    const last30Days = Array.from({ length: 30 }, (_, i) => {
-      const date = new Date()
-      date.setDate(date.getDate() - (29 - i))
-      return date.toISOString().split('T')[0]
+    // Bookings over time (last 30 days) for line chart - FIXED
+    const getLast30Days = () => {
+      const days = []
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        days.push(d.toISOString().split('T')[0])
+      }
+      return days
+    }
+
+    const last30Days = getLast30Days()
+
+    const timeData = last30Days.map(date => {
+      const count = analyticsSource.filter(b => {
+        // Handle different date formats (YYYY-MM-DD from API)
+        const bookingDate = b.date ? b.date.split('T')[0] : ''
+        return bookingDate === date
+      }).length
+
+      return {
+        date: date.slice(5), // Show MM-DD
+        bookings: count,
+      }
     })
 
-    const timeData = last30Days.map(date => ({
-      date: date.slice(5),
-      bookings: sortedBookings.filter(b => b.date === date).length,
-    }))
-
-    // Top 5 most booked resources
-    const resourceBookings = sortedBookings.reduce((acc, booking) => {
+    // Top 5 most booked resources (uses ALL bookings)
+    const resourceBookings = analyticsSource.reduce((acc, booking) => {
       const key = `${booking.resourceName} (${booking.resourceType})`
       acc[key] = (acc[key] || 0) + 1
       return acc
@@ -527,7 +583,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       timeData,
       topResources,
     }
-  }, [sortedBookings])
+  }, [bookings, allBookingsForAnalytics, isAllScope])
 
   // Export to CSV function
   const exportToCSV = () => {
@@ -566,6 +622,183 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       showConfirmButton: false,
     })
   }
+
+  // Export to PDF function
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF()
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const today = new Date().toISOString().split('T')[0]
+
+      // Header with styling
+      doc.setFillColor(139, 92, 246) // Violet-500
+      doc.rect(0, 0, pageWidth, 40, 'F')
+
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(24)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Booking Analytics Report', pageWidth / 2, 25, { align: 'center' })
+
+      // Subheader
+      doc.setTextColor(100, 100, 100)
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Generated on: ${today}`, pageWidth / 2, 50, { align: 'center' })
+
+      // Summary Statistics Section
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(16)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Summary Statistics', 14, 70)
+
+      // Stats boxes
+      const stats = [
+        { label: 'Total Bookings', value: analyticsData.total, color: [59, 130, 246] },
+        { label: 'Approved', value: analyticsData.approved, color: [16, 185, 129] },
+        { label: 'Pending', value: analyticsData.pending, color: [245, 158, 11] },
+        { label: 'Rejected', value: analyticsData.rejected, color: [239, 68, 68] },
+      ]
+
+      let xPos = 14
+      stats.forEach((stat) => {
+        doc.setFillColor(stat.color[0], stat.color[1], stat.color[2])
+        doc.roundedRect(xPos, 78, 42, 28, 3, 3, 'F')
+        doc.setTextColor(255, 255, 255)
+        doc.setFontSize(14)
+        doc.setFont('helvetica', 'bold')
+        doc.text(stat.value.toString(), xPos + 21, 92, { align: 'center' })
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'normal')
+        doc.text(stat.label, xPos + 21, 100, { align: 'center' })
+        xPos += 48
+      })
+
+      // Status Breakdown Table
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Status Breakdown', 14, 125)
+
+      const statusTableData = analyticsData.statusData.map(item => [item.name, item.value])
+      autoTable(doc, {
+        startY: 130,
+        head: [['Status', 'Count']],
+        body: statusTableData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [139, 92, 246],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        styles: {
+          fontSize: 11,
+          cellPadding: 5,
+        },
+      })
+
+      // Top Resources Section
+      const currentY = doc.lastAutoTable.finalY + 15
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Top 5 Most Booked Resources', 14, currentY)
+
+      const topResourcesData = analyticsData.topResources.map((resource, index) => [
+        (index + 1).toString(),
+        resource.name,
+        resource.count.toString(),
+      ])
+
+      autoTable(doc, {
+        startY: currentY + 5,
+        head: [['#', 'Resource Name', 'Bookings']],
+        body: topResourcesData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [139, 92, 246],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 5,
+        },
+        columnStyles: {
+          0: { cellWidth: 15, halign: 'center' },
+          2: { cellWidth: 30, halign: 'center' },
+        },
+      })
+
+      // Resource Type Breakdown
+      const resourceTypeY = doc.lastAutoTable.finalY + 15
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Bookings by Resource Type', 14, resourceTypeY)
+
+      const resourceTypeData = analyticsData.resourceTypeData.map(item => [item.name, item.value])
+      autoTable(doc, {
+        startY: resourceTypeY + 5,
+        head: [['Resource Type', 'Bookings']],
+        body: resourceTypeData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [139, 92, 246],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 5,
+        },
+      })
+
+      // Footer
+      const footerY = doc.internal.pageSize.getHeight() - 20
+      doc.setTextColor(150, 150, 150)
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'italic')
+      doc.text('PAF Booking System - Analytics Report', pageWidth / 2, footerY, { align: 'center' })
+
+      // Save PDF
+      doc.save(`bookings-analytics-report-${today}.pdf`)
+
+      Swal.fire({
+        title: 'Export Complete',
+        text: 'PDF analytics report has been downloaded.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      console.error('PDF Export Error:', error)
+      Swal.fire({
+        title: 'Export Failed',
+        text: `Failed to generate PDF: ${error.message}`,
+        icon: 'error',
+      })
+    }
+  }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(event.target)) {
+        setShowDownloadMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   return (
     <section className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 md:p-8">
@@ -967,7 +1200,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                         <button
                           type="button"
                           disabled={isActionLoading || selectedBooking.status === 'PENDING'}
-                          onClick={() => selectedBooking.status !== 'PENDING' && handleCancel(selectedBooking.id)}
+                          onClick={() => selectedBooking.status !== 'PENDING' && handleClear(selectedBooking.id)}
                           className={`rounded-full border px-5 py-2.5 text-sm font-semibold transition ${
                             selectedBooking.status === 'PENDING'
                               ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
@@ -1090,15 +1323,60 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
               </div>
             </div>
 
-            <button
-              onClick={exportToCSV}
-              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Download Report
-            </button>
+            {/* Download Report Dropdown */}
+            <div className="relative" ref={downloadMenuRef}>
+              <button
+                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white transition hover:shadow-lg hover:shadow-violet-500/30"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download Report
+                <svg className={`w-4 h-4 transition-transform ${showDownloadMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showDownloadMenu && (
+                <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-xl border border-slate-200 overflow-hidden z-10">
+                  <button
+                    onClick={() => {
+                      exportToCSV()
+                      setShowDownloadMenu(false)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition border-b border-slate-100"
+                  >
+                    <div className="p-1.5 bg-emerald-100 rounded">
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">CSV Format</p>
+                      <p className="text-xs text-slate-400">Spreadsheet data</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportToPDF()
+                      setShowDownloadMenu(false)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    <div className="p-1.5 bg-rose-100 rounded">
+                      <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">PDF Format</p>
+                      <p className="text-xs text-slate-400">Analytics report</p>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Stats Cards */}

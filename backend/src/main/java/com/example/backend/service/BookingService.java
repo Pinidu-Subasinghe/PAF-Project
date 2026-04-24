@@ -125,6 +125,33 @@ public class BookingService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getAllBookingsIncludingCleared(BookingStatus status) {
+        List<Booking> bookings = status == null
+                ? bookingRepository.findAllByOrderByCreatedAtDesc()
+                : bookingRepository.findByStatusOrderByCreatedAtDesc(status);
+
+        // Return ALL bookings including cleared ones (for analytics)
+        return bookings.stream()
+            .map(this::toResponse)
+            .toList();
+    }
+
+    @Transactional
+    public BookingResponse clearBookingForAdmin(Long bookingId, String adminEmail) {
+        Booking booking = findBooking(bookingId);
+
+        // Only allow clearing non-pending bookings
+        if (booking.getStatus() == BookingStatus.PENDING) {
+            throw new IllegalArgumentException("Cannot clear pending bookings");
+        }
+
+        booking.setDeletedForAdmin(true);
+        Booking saved = bookingRepository.save(booking);
+
+        return toResponse(saved);
+    }
+
     @Transactional
     public BookingResponse approveBooking(Long bookingId, String adminEmail) {
         Booking booking = findBooking(bookingId);
@@ -309,7 +336,9 @@ public class BookingService {
             return;
         }
 
+        // Admin delete - sets deletedForAdmin flag (soft clear)
         booking.setDeletedForAdmin(true);
+        persistOrDeleteIfHiddenForBoth(booking);
 
         AppUser admin = actor;
         String title = "Your booking has been canceled";
@@ -317,8 +346,6 @@ public class BookingService {
             "Your booking has been canceled by %s",
                 admin.getFullName() != null ? admin.getFullName() : admin.getEmail()
         );
-
-        persistOrDeleteIfHiddenForBoth(booking);
 
         notificationService.createNotificationForUserId(
                 booking.getUserId(),
