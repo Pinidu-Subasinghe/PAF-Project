@@ -21,7 +21,7 @@ function getCardImageUrl(resource) {
   return ''
 }
 
-export default function AdminResourceManagement({ onSelectResource } = {}) {
+export default function AdminResourceManagement({ onSelectResource, onViewAnalytics } = {}) {
   const [resources, setResources] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -56,9 +56,18 @@ export default function AdminResourceManagement({ onSelectResource } = {}) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900">Manage Resources</h2>
-        <p className="mt-1 text-sm text-slate-500">Review, update, and monitor all campus facilities and equipment in one place.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Manage Resources</h2>
+          <p className="mt-1 text-sm text-slate-500">Review, update, and monitor all campus facilities and equipment in one place.</p>
+        </div>
+        <button
+          type="button"
+          onClick={onViewAnalytics}
+          className="rounded-full border border-teal-300 bg-teal-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-teal-700 transition hover:border-teal-400 hover:bg-teal-100"
+        >
+          View Analytics
+        </button>
       </div>
 
       {isLoading && (
