@@ -277,6 +277,13 @@ export async function rejectIncidentTicket(ticketId, payload) {
   })
 }
 
+export async function getAllResources() {
+  return request('/api/resources', {
+    method: 'GET',
+    headers: getAuthHeader(),
+  })
+}
+
 export async function resolveIncidentTicket(ticketId, payload) {
   return request(`/api/v1/tickets/${ticketId}/resolve`, {
     method: 'PUT',

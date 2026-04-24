@@ -7,6 +7,8 @@ import java.time.LocalTime;
 public record BookingResponse(
         Long id,
         Long resourceId,
+        String resourceType,
+        String resourceName,
         Long userId,
         LocalDate date,
         LocalTime startTime,
