@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createResource } from '../../api/api'
 import { toast } from 'react-toastify'
+import { hasFormErrors, validateAdminResourceForm } from './AdminResourceValidations'
 
 const initialFormState = {
   name: '',
@@ -38,33 +39,63 @@ export default function AdminAddResource({ onCreated } = {}) {
   const [coverImage, setCoverImage] = useState(null)
   const [extraImages, setExtraImages] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [errorMessage, setErrorMessage] = useState('')
+
+  const validateAndSetErrors = (nextFormState = formState, nextCoverImage = coverImage, nextExtraImages = extraImages) => {
+    const errors = validateAdminResourceForm({
+      formState: nextFormState,
+      coverImage: nextCoverImage,
+      extraImages: nextExtraImages,
+    })
+    setFieldErrors(errors)
+    return errors
+  }
+
+  const updateFormState = (updater) => {
+    setFormState((current) => {
+      const nextState = typeof updater === 'function' ? updater(current) : { ...current, ...updater }
+      if (hasTriedSubmit) {
+        validateAndSetErrors(nextState, coverImage, extraImages)
+      }
+      return nextState
+    })
+  }
 
   const resetForm = () => {
     setFormState(initialFormState)
     setCoverImage(null)
     setExtraImages([])
+    setHasTriedSubmit(false)
+    setFieldErrors({})
+    setErrorMessage('')
   }
 
   const handleExtraImagesChange = (event) => {
     const files = Array.from(event.target.files || [])
-    if (files.length > 2) {
-      setErrorMessage('You can upload up to 2 additional images.')
-      setExtraImages(files.slice(0, 2))
-      return
-    }
     setExtraImages(files)
+    if (hasTriedSubmit) {
+      validateAndSetErrors(formState, coverImage, files)
+    }
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    setHasTriedSubmit(true)
+
+    const validationErrors = validateAndSetErrors()
+    if (hasFormErrors(validationErrors)) {
+      setErrorMessage('Please fix the highlighted fields before submitting.')
+      return
+    }
+
     setIsSubmitting(true)
     setErrorMessage('')
 
     const payload = {
       ...formState,
-      capacity: Number(formState.capacity),
+      capacity: formState.type === 'EQUIPMENT' ? 1 : Number(formState.capacity),
       description: formState.description.trim(),
     }
 
@@ -118,10 +149,11 @@ export default function AdminAddResource({ onCreated } = {}) {
             required
             type="text"
             value={formState.name}
-            onChange={(event) => setFormState((current) => ({ ...current, name: event.target.value }))}
+            onChange={(event) => updateFormState((current) => ({ ...current, name: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
             placeholder="Engineering Lab A"
           />
+          {fieldErrors.name && <span className="text-xs text-rose-600">{fieldErrors.name}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -130,9 +162,10 @@ export default function AdminAddResource({ onCreated } = {}) {
             value={formState.type}
             onChange={(event) => {
               const newType = event.target.value
-              setFormState((current) => ({
+              updateFormState((current) => ({
                 ...current,
                 type: newType,
+                capacity: newType === 'EQUIPMENT' ? '1' : current.capacity,
                 equipment: newType === 'EQUIPMENT' ? (current.equipment ?? initialFormState.equipment) : initialFormState.equipment,
               }))
             }}
@@ -142,6 +175,7 @@ export default function AdminAddResource({ onCreated } = {}) {
               <option key={option} value={option}>{formatEnumLabel(option)}</option>
             ))}
           </select>
+          {fieldErrors.type && <span className="text-xs text-rose-600">{fieldErrors.type}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -151,9 +185,11 @@ export default function AdminAddResource({ onCreated } = {}) {
             min="1"
             type="number"
             value={formState.capacity}
-            onChange={(event) => setFormState((current) => ({ ...current, capacity: event.target.value }))}
+            onChange={(event) => updateFormState((current) => ({ ...current, capacity: event.target.value }))}
+            disabled={formState.type === 'EQUIPMENT'}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
+          {fieldErrors.capacity && <span className="text-xs text-rose-600">{fieldErrors.capacity}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700 md:col-span-2">
@@ -162,10 +198,11 @@ export default function AdminAddResource({ onCreated } = {}) {
             required
             type="text"
             value={formState.location}
-            onChange={(event) => setFormState((current) => ({ ...current, location: event.target.value }))}
+            onChange={(event) => updateFormState((current) => ({ ...current, location: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
             placeholder="Main Building, Floor 2"
           />
+          {fieldErrors.location && <span className="text-xs text-rose-600">{fieldErrors.location}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -174,9 +211,12 @@ export default function AdminAddResource({ onCreated } = {}) {
             required
             type="time"
             value={formState.availableFrom}
-            onChange={(event) => setFormState((current) => ({ ...current, availableFrom: event.target.value }))}
+            min="08:00"
+            max="20:00"
+            onChange={(event) => updateFormState((current) => ({ ...current, availableFrom: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
+          {fieldErrors.availableFrom && <span className="text-xs text-rose-600">{fieldErrors.availableFrom}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -185,22 +225,26 @@ export default function AdminAddResource({ onCreated } = {}) {
             required
             type="time"
             value={formState.availableTo}
-            onChange={(event) => setFormState((current) => ({ ...current, availableTo: event.target.value }))}
+            min="08:00"
+            max="20:00"
+            onChange={(event) => updateFormState((current) => ({ ...current, availableTo: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
+          {fieldErrors.availableTo && <span className="text-xs text-rose-600">{fieldErrors.availableTo}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700 md:col-span-2">
           Status
           <select
             value={formState.status}
-            onChange={(event) => setFormState((current) => ({ ...current, status: event.target.value }))}
+            onChange={(event) => updateFormState((current) => ({ ...current, status: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>{formatEnumLabel(option)}</option>
             ))}
           </select>
+          {fieldErrors.status && <span className="text-xs text-rose-600">{fieldErrors.status}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700 md:col-span-2">
@@ -208,31 +252,40 @@ export default function AdminAddResource({ onCreated } = {}) {
           <textarea
             rows="3"
             value={formState.description}
-            onChange={(event) => setFormState((current) => ({ ...current, description: event.target.value }))}
+            onChange={(event) => updateFormState((current) => ({ ...current, description: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
             placeholder="Optional details"
           />
+          {fieldErrors.description && <span className="text-xs text-rose-600">{fieldErrors.description}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Cover Image
           <input
             type="file"
-            accept="image/*"
-            onChange={(event) => setCoverImage(event.target.files?.[0] ?? null)}
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+            onChange={(event) => {
+              const selectedCover = event.target.files?.[0] ?? null
+              setCoverImage(selectedCover)
+              if (hasTriedSubmit) {
+                validateAndSetErrors(formState, selectedCover, extraImages)
+              }
+            }}
             className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
           />
+          {fieldErrors.coverImage && <span className="text-xs text-rose-600">{fieldErrors.coverImage}</span>}
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Additional Images (max 2)
           <input
             type="file"
-            accept="image/*"
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
             multiple
             onChange={handleExtraImagesChange}
             className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
           />
+          {fieldErrors.extraImages && <span className="text-xs text-rose-600">{fieldErrors.extraImages}</span>}
           {!!extraImages.length && (
             <span className="text-xs text-slate-500">
               Selected: {extraImages.map((file) => file.name).join(', ')}
