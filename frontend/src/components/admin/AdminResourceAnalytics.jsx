@@ -35,6 +35,15 @@ function percentage(part, total) {
 	return Math.round((part / total) * 100)
 }
 
+function extractHourLabel(value) {
+	if (!value || typeof value !== 'string') return null
+	const [hourText] = value.split(':')
+	const hour = Number(hourText)
+	if (!Number.isInteger(hour) || hour < 0 || hour > 23) return null
+	const paddedHour = String(hour).padStart(2, '0')
+	return `${paddedHour}:00 - ${paddedHour}:59`
+}
+
 const OPEN_TICKET_STATUSES = new Set(['OPEN', 'IN_PROGRESS'])
 
 export default function AdminResourceAnalytics({ onBack } = {}) {
@@ -224,10 +233,38 @@ export default function AdminResourceAnalytics({ onBack } = {}) {
 			.slice(0, 8)
 	}, [resources, bookings, tickets])
 
+	const topResources = useMemo(
+		() => resourceImpactRows
+			.filter((row) => row.bookingCount > 0 || row.ticketCount > 0)
+			.sort((a, b) => {
+				if (b.bookingCount !== a.bookingCount) return b.bookingCount - a.bookingCount
+				if (b.healthScore !== a.healthScore) return b.healthScore - a.healthScore
+				return a.name.localeCompare(b.name)
+			})
+			.slice(0, 5),
+		[resourceImpactRows],
+	)
+
+	const peakBookingHours = useMemo(() => {
+		const hourMap = bookings.reduce((acc, booking) => {
+			const hourLabel = extractHourLabel(booking?.startTime ?? booking?.fromTime ?? booking?.timeFrom)
+			if (!hourLabel) return acc
+
+			acc[hourLabel] = (acc[hourLabel] || 0) + 1
+			return acc
+		}, {})
+
+		return Object.entries(hourMap)
+			.map(([hour, count]) => ({ hour, count }))
+			.sort((a, b) => b.count - a.count)
+			.slice(0, 6)
+	}, [bookings])
+
 	const maxTypeCount = resourceAnalytics.byType[0]?.count || 1
 	const maxBookingStatusCount = bookingAnalytics.byStatus[0]?.count || 1
 	const maxTicketStatusCount = ticketAnalytics.byStatus[0]?.count || 1
 	const maxPriorityCount = ticketAnalytics.byPriority[0]?.count || 1
+	const maxPeakHourCount = peakBookingHours[0]?.count || 1
 
 	const handleDownloadPdf = () => {
 		setIsDownloading(true)
@@ -303,6 +340,18 @@ export default function AdminResourceAnalytics({ onBack } = {}) {
 
 			autoTable(doc, {
 				startY: doc.lastAutoTable.finalY + 14,
+				head: [['Peak Booking Hour', 'Bookings']],
+				body: peakBookingHours.length
+					? peakBookingHours.map((row) => [row.hour, row.count])
+					: [['No hourly booking data available', '-']],
+				theme: 'grid',
+				headStyles: { fillColor: [2, 132, 199] },
+				styles: { fontSize: 10 },
+				margin: { left: 40, right: 40 },
+			})
+
+			autoTable(doc, {
+				startY: doc.lastAutoTable.finalY + 14,
 				head: [['Ticket Status', 'Count']],
 				body: ticketAnalytics.byStatus.map((row) => [formatEnumLabel(row.status), row.count]),
 				theme: 'grid',
@@ -336,6 +385,24 @@ export default function AdminResourceAnalytics({ onBack } = {}) {
 
 			autoTable(doc, {
 				startY: doc.lastAutoTable.finalY + 32,
+				head: [['Top Resource', 'Type', 'Bookings', 'Tickets', 'Health Score']],
+				body: topResources.length
+					? topResources.map((row) => [
+						row.name,
+						formatEnumLabel(row.type),
+						row.bookingCount,
+						row.ticketCount,
+						row.healthScore,
+					])
+					: [['No linked booking/ticket activity', '-', '-', '-', '-']],
+				theme: 'striped',
+				headStyles: { fillColor: [8, 145, 178] },
+				styles: { fontSize: 9, cellPadding: 5 },
+				margin: { left: 40, right: 40 },
+			})
+
+			autoTable(doc, {
+				startY: doc.lastAutoTable.finalY + 14,
 				head: [['Resource', 'Type', 'Status', 'Bookings', 'Tickets', 'Open', 'Health Score']],
 				body: resourceImpactRows.map((row) => [
 					row.name,
@@ -524,6 +591,53 @@ export default function AdminResourceAnalytics({ onBack } = {}) {
 											<span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
 												{row.count} bookings
 											</span>
+										</div>
+									))}
+								</div>
+							)}
+						</article>
+					</section>
+
+					<section className="grid gap-4 lg:grid-cols-2">
+						<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
+							<h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Top Resources</h3>
+							{!topResources.length ? (
+								<p className="mt-4 text-sm text-slate-500">No linked booking or ticket activity found for resources.</p>
+							) : (
+								<div className="mt-4 space-y-3">
+									{topResources.map((row, index) => (
+										<div key={row.resourceId} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+											<div className="flex items-center justify-between gap-3 text-sm">
+												<span className="font-semibold text-slate-800">{index + 1}. {row.name}</span>
+												<span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{formatEnumLabel(row.type)}</span>
+											</div>
+											<p className="mt-1 text-xs text-slate-600">
+												Bookings: {row.bookingCount} | Tickets: {row.ticketCount} | Health: {row.healthScore}
+											</p>
+										</div>
+									))}
+								</div>
+							)}
+						</article>
+
+						<article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
+							<h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Peak Booking Hours</h3>
+							{!peakBookingHours.length ? (
+								<p className="mt-4 text-sm text-slate-500">No hourly booking data available.</p>
+							) : (
+								<div className="mt-4 space-y-3">
+									{peakBookingHours.map((row) => (
+										<div key={row.hour}>
+											<div className="flex items-center justify-between text-xs text-slate-600">
+												<span>{row.hour}</span>
+												<span>{row.count} bookings</span>
+											</div>
+											<div className="mt-1 h-2 rounded-full bg-slate-100">
+												<div
+													className="h-2 rounded-full bg-sky-500"
+													style={{ width: `${percentage(row.count, maxPeakHourCount)}%` }}
+												/>
+											</div>
 										</div>
 									))}
 								</div>
