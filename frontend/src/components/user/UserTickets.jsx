@@ -1,4 +1,6 @@
 import { HiOutlineTrash } from 'react-icons/hi2'
+import Swal from 'sweetalert2'
+import 'sweetalert2/dist/sweetalert2.min.css'
 
 const statusBadgeClasses = {
 	OPEN: 'bg-amber-100 text-amber-700',
@@ -34,6 +36,29 @@ export default function UserTickets({
 }) {
 	const canDeleteTicket = (status) => ['OPEN', 'RESOLVED', 'REJECTED', 'CLOSED'].includes(status)
 
+	const handleDeleteClick = async (ticket) => {
+		const canDelete = canDeleteTicket(ticket?.status)
+		if (!ticket?.id || !canDelete || deletingTicketIds.includes(ticket.id)) {
+			return
+		}
+
+		const result = await Swal.fire({
+			title: 'Delete ticket?',
+			text: `Delete ticket #${ticket.id} permanently? This action cannot be undone.`,
+			icon: 'warning',
+			showCancelButton: true,
+			confirmButtonText: 'Yes, delete',
+			cancelButtonText: 'Cancel',
+			confirmButtonColor: '#dc2626',
+		})
+
+		if (!result.isConfirmed) {
+			return
+		}
+
+		onDeleteTicket?.(ticket)
+	}
+
 	return (
 		<div className="space-y-6">
 			{isLoading ? (
@@ -64,7 +89,9 @@ export default function UserTickets({
 								</span>
 								<button
 									type="button"
-									onClick={() => onDeleteTicket?.(ticket)}
+									onClick={() => {
+										void handleDeleteClick(ticket)
+									}}
 									disabled={!canDeleteTicket(ticket.status) || deletingTicketIds.includes(ticket.id)}
 									className="rounded-full p-2 text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
 									aria-label={`Delete ticket ${ticket.id}`}
