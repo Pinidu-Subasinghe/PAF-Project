@@ -5,6 +5,7 @@ import ChangePassword from '../components/user/ChangePassword'
 import AdminResourceManagement from '../components/admin/AdminResourceManagement'
 import AdminAddResource from '../components/admin/AdminAddResource'
 import AdminResourceInfoCard from '../components/admin/AdminResourceInfoCard'
+import AdminResourceAnalytics from '../components/admin/AdminResourceAnalytics'
 import AdminUserManagement from '../components/admin/AdminUserManagement'
 import AdminTickets from '../components/admin/AdminTickets'
 import BookingList from '../components/booking/BookingList'
@@ -44,6 +45,7 @@ function readRequestedTab(navItems) {
 export default function AdminDashboard() {
   const [session, setSession] = useState(() => readAuthSession())
   const [selectedResourceId, setSelectedResourceId] = useState(null)
+  const [resourceView, setResourceView] = useState('list')
   const navItems = useMemo(() => adminNavItems, [])
   const [activeItemId, setActiveItemId] = useState(() => readRequestedTab(navItems) ?? navItems[0].id)
 
@@ -63,9 +65,14 @@ export default function AdminDashboard() {
 
   const handleSelect = (id) => {
     setActiveItemId(id)
-    if (id !== 'manage-resources') {
+    if (id === 'manage-resources') {
       setSelectedResourceId(null)
+      setResourceView('list')
+      return
     }
+
+    setSelectedResourceId(null)
+    setResourceView('list')
   }
 
   useEffect(() => {
@@ -104,11 +111,19 @@ export default function AdminDashboard() {
 
   const handleResourceSelect = (resourceId) => {
     setSelectedResourceId(resourceId)
+    setResourceView('details')
     setActiveItemId('manage-resources')
   }
 
   const handleBackToResourceList = () => {
     setSelectedResourceId(null)
+    setResourceView('list')
+    setActiveItemId('manage-resources')
+  }
+
+  const handleViewResourceAnalytics = () => {
+    setSelectedResourceId(null)
+    setResourceView('analytics')
     setActiveItemId('manage-resources')
   }
 
@@ -116,7 +131,7 @@ export default function AdminDashboard() {
     profile: <Profile session={session} />,
     'change-password': <ChangePassword session={session} />,
     'add-resources': <AdminAddResource />,
-    'manage-resources': selectedResourceId
+    'manage-resources': resourceView === 'details' && selectedResourceId
       ? (
           <AdminResourceInfoCard
             resourceId={selectedResourceId}
@@ -124,7 +139,9 @@ export default function AdminDashboard() {
             onDeleted={handleBackToResourceList}
           />
         )
-      : <AdminResourceManagement onSelectResource={handleResourceSelect} />,
+      : resourceView === 'analytics'
+        ? <AdminResourceAnalytics onBack={handleBackToResourceList} />
+        : <AdminResourceManagement onSelectResource={handleResourceSelect} onViewAnalytics={handleViewResourceAnalytics} />,
     'user-management': <AdminUserManagement />,
     'manage-bookings': (
       <div className="space-y-4">
