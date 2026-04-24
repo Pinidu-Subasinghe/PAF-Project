@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import Swal from 'sweetalert2'
 import 'sweetalert2/dist/sweetalert2.min.css'
 import {
@@ -16,6 +16,8 @@ import {
   Line,
   ResponsiveContainer,
 } from 'recharts'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import {
   approveBooking,
   cancelBooking,
@@ -63,6 +65,8 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const [resourceIdSearch, setResourceIdSearch] = useState('')
   const [viewMode, setViewMode] = useState('bookings')
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false)
+  const downloadMenuRef = useRef(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -619,6 +623,183 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     })
   }
 
+  // Export to PDF function
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF()
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const today = new Date().toISOString().split('T')[0]
+
+      // Header with styling
+      doc.setFillColor(139, 92, 246) // Violet-500
+      doc.rect(0, 0, pageWidth, 40, 'F')
+
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(24)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Booking Analytics Report', pageWidth / 2, 25, { align: 'center' })
+
+      // Subheader
+      doc.setTextColor(100, 100, 100)
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Generated on: ${today}`, pageWidth / 2, 50, { align: 'center' })
+
+      // Summary Statistics Section
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(16)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Summary Statistics', 14, 70)
+
+      // Stats boxes
+      const stats = [
+        { label: 'Total Bookings', value: analyticsData.total, color: [59, 130, 246] },
+        { label: 'Approved', value: analyticsData.approved, color: [16, 185, 129] },
+        { label: 'Pending', value: analyticsData.pending, color: [245, 158, 11] },
+        { label: 'Rejected', value: analyticsData.rejected, color: [239, 68, 68] },
+      ]
+
+      let xPos = 14
+      stats.forEach((stat) => {
+        doc.setFillColor(stat.color[0], stat.color[1], stat.color[2])
+        doc.roundedRect(xPos, 78, 42, 28, 3, 3, 'F')
+        doc.setTextColor(255, 255, 255)
+        doc.setFontSize(14)
+        doc.setFont('helvetica', 'bold')
+        doc.text(stat.value.toString(), xPos + 21, 92, { align: 'center' })
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'normal')
+        doc.text(stat.label, xPos + 21, 100, { align: 'center' })
+        xPos += 48
+      })
+
+      // Status Breakdown Table
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Status Breakdown', 14, 125)
+
+      const statusTableData = analyticsData.statusData.map(item => [item.name, item.value])
+      autoTable(doc, {
+        startY: 130,
+        head: [['Status', 'Count']],
+        body: statusTableData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [139, 92, 246],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        styles: {
+          fontSize: 11,
+          cellPadding: 5,
+        },
+      })
+
+      // Top Resources Section
+      const currentY = doc.lastAutoTable.finalY + 15
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Top 5 Most Booked Resources', 14, currentY)
+
+      const topResourcesData = analyticsData.topResources.map((resource, index) => [
+        (index + 1).toString(),
+        resource.name,
+        resource.count.toString(),
+      ])
+
+      autoTable(doc, {
+        startY: currentY + 5,
+        head: [['#', 'Resource Name', 'Bookings']],
+        body: topResourcesData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [139, 92, 246],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 5,
+        },
+        columnStyles: {
+          0: { cellWidth: 15, halign: 'center' },
+          2: { cellWidth: 30, halign: 'center' },
+        },
+      })
+
+      // Resource Type Breakdown
+      const resourceTypeY = doc.lastAutoTable.finalY + 15
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Bookings by Resource Type', 14, resourceTypeY)
+
+      const resourceTypeData = analyticsData.resourceTypeData.map(item => [item.name, item.value])
+      autoTable(doc, {
+        startY: resourceTypeY + 5,
+        head: [['Resource Type', 'Bookings']],
+        body: resourceTypeData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [139, 92, 246],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 5,
+        },
+      })
+
+      // Footer
+      const footerY = doc.internal.pageSize.getHeight() - 20
+      doc.setTextColor(150, 150, 150)
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'italic')
+      doc.text('PAF Booking System - Analytics Report', pageWidth / 2, footerY, { align: 'center' })
+
+      // Save PDF
+      doc.save(`bookings-analytics-report-${today}.pdf`)
+
+      Swal.fire({
+        title: 'Export Complete',
+        text: 'PDF analytics report has been downloaded.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      console.error('PDF Export Error:', error)
+      Swal.fire({
+        title: 'Export Failed',
+        text: `Failed to generate PDF: ${error.message}`,
+        icon: 'error',
+      })
+    }
+  }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(event.target)) {
+        setShowDownloadMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   return (
     <section className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 md:p-8">
       {/* Toggle Switch for Admin */}
@@ -1142,15 +1323,60 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
               </div>
             </div>
 
-            <button
-              onClick={exportToCSV}
-              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Download Report
-            </button>
+            {/* Download Report Dropdown */}
+            <div className="relative" ref={downloadMenuRef}>
+              <button
+                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white transition hover:shadow-lg hover:shadow-violet-500/30"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download Report
+                <svg className={`w-4 h-4 transition-transform ${showDownloadMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showDownloadMenu && (
+                <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-xl border border-slate-200 overflow-hidden z-10">
+                  <button
+                    onClick={() => {
+                      exportToCSV()
+                      setShowDownloadMenu(false)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition border-b border-slate-100"
+                  >
+                    <div className="p-1.5 bg-emerald-100 rounded">
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">CSV Format</p>
+                      <p className="text-xs text-slate-400">Spreadsheet data</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportToPDF()
+                      setShowDownloadMenu(false)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    <div className="p-1.5 bg-rose-100 rounded">
+                      <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">PDF Format</p>
+                      <p className="text-xs text-slate-400">Analytics report</p>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Stats Cards */}
