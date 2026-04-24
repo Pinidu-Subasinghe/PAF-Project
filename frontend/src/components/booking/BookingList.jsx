@@ -67,6 +67,8 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const [showDownloadMenu, setShowDownloadMenu] = useState(false)
   const downloadMenuRef = useRef(null)
+  const [userViewTab, setUserViewTab] = useState('list')
+  const [currentMonth, setCurrentMonth] = useState(new Date())
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -789,6 +791,62 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     }
   }
 
+  // Calendar helper functions
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear()
+    const month = date.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const daysInMonth = lastDay.getDate()
+    const startDayOfWeek = firstDay.getDay()
+
+    const days = []
+    for (let i = 0; i < startDayOfWeek; i++) {
+      days.push(null)
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(i)
+    }
+    return days
+  }
+
+  const formatDate = (year, month, day) => {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  }
+
+  const groupBookingsByDate = (bookingsList) => {
+    const grouped = {}
+    bookingsList.forEach(booking => {
+      const dateKey = booking.date?.split('T')[0] || booking.date
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = []
+      }
+      grouped[dateKey].push(booking)
+    })
+    return grouped
+  }
+
+  const getStatusColors = (status) => {
+    switch (status) {
+      case 'PENDING':
+        return 'bg-amber-50 border-amber-200 text-amber-700'
+      case 'APPROVED':
+        return 'bg-emerald-50 border-emerald-200 text-emerald-700'
+      case 'REJECTED':
+        return 'bg-rose-50 border-rose-200 text-rose-700'
+      default:
+        return 'bg-slate-50 border-slate-200 text-slate-700'
+    }
+  }
+
+  const navigateMonth = (direction) => {
+    setCurrentMonth(prev => {
+      const newDate = new Date(prev)
+      newDate.setMonth(newDate.getMonth() + direction)
+      return newDate
+    })
+  }
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -825,6 +883,34 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
               }`}
             >
               Analytics
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toggle Switch for User (My Bookings / Calendar) */}
+      {!isAllScope && (
+        <div className="mb-6 flex items-center justify-start">
+          <div className="flex bg-slate-100 rounded-full p-1">
+            <button
+              onClick={() => setUserViewTab('list')}
+              className={`px-3 py-2 rounded-full text-xs font-semibold transition-all duration-200 sm:px-4 sm:text-sm ${
+                userViewTab === 'list'
+                  ? 'bg-gradient-to-r from-blue-500 via-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              My Bookings
+            </button>
+            <button
+              onClick={() => setUserViewTab('calendar')}
+              className={`px-3 py-2 rounded-full text-xs font-semibold transition-all duration-200 sm:px-4 sm:text-sm ${
+                userViewTab === 'calendar'
+                  ? 'bg-gradient-to-r from-blue-500 via-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Calendar
             </button>
           </div>
         </div>
@@ -885,52 +971,220 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
         </div>
       )}
 
-      {isLoading ? (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">Loading bookings...</div>
-      ) : sortedBookings.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">No bookings found.</div>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200">
-          <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-            <thead className="bg-slate-50 text-slate-600">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Resource ID</th>
-                <th className="px-4 py-3 font-semibold">Resource</th>
-                <th className="px-4 py-3 font-semibold">Resource Type</th>
-                <th className="px-4 py-3 font-semibold">Date &amp; Time</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {sortedBookings.map((booking) => {
-                const badgeClass = statusBadgeClasses[booking.status] ?? 'bg-slate-100 text-slate-700'
-
-                return (
-                  <tr key={booking.id}>
-                    <td className="px-4 py-3 font-medium text-slate-800">{booking.resourceId}</td>
-                    <td className="px-4 py-3 text-slate-700">{booking.resourceName}</td>
-                    <td className="px-4 py-3 text-slate-700">{booking.resourceType}</td>
-                    <td className="px-4 py-3 text-slate-700">{formatDateTime(booking.date, booking.startTime, booking.endTime)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>
-                        {formatStatus(booking.status)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => openBookingModal(booking)}
-                        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <span aria-hidden="true">View</span>
-                      </button>
-                    </td>
+      {/* LIST VIEW */}
+      {(isAllScope || userViewTab === 'list') && (
+        <>
+          {isLoading ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">Loading bookings...</div>
+          ) : sortedBookings.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">No bookings found.</div>
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                <thead className="bg-slate-50 text-slate-600">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Resource ID</th>
+                    <th className="px-4 py-3 font-semibold">Resource</th>
+                    <th className="px-4 py-3 font-semibold">Resource Type</th>
+                    <th className="px-4 py-3 font-semibold">Date &amp; Time</th>
+                    <th className="px-4 py-3 font-semibold">Status</th>
+                    <th className="px-4 py-3 font-semibold">Actions</th>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {sortedBookings.map((booking) => {
+                    const badgeClass = statusBadgeClasses[booking.status] ?? 'bg-slate-100 text-slate-700'
+
+                    return (
+                      <tr key={booking.id}>
+                        <td className="px-4 py-3 font-medium text-slate-800">{booking.resourceId}</td>
+                        <td className="px-4 py-3 text-slate-700">{booking.resourceName}</td>
+                        <td className="px-4 py-3 text-slate-700">{booking.resourceType}</td>
+                        <td className="px-4 py-3 text-slate-700">{formatDateTime(booking.date, booking.startTime, booking.endTime)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>
+                            {formatStatus(booking.status)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            onClick={() => openBookingModal(booking)}
+                            className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <span aria-hidden="true">View</span>
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* CALENDAR VIEW - Only for User */}
+      {!isAllScope && userViewTab === 'calendar' && (
+        <div className="space-y-4">
+          {/* Calendar Header */}
+          <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-sky-100 to-blue-50 p-4 shadow-sm shadow-sky-200/50">
+            <button
+              onClick={() => navigateMonth(-1)}
+              className="flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Prev
+            </button>
+            <h3 className="text-lg font-semibold text-slate-800">
+              {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </h3>
+            <button
+              onClick={() => navigateMonth(1)}
+              className="flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+            >
+              Next
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="rounded-2xl border border-sky-200/60 bg-white p-4 shadow-sm shadow-sky-100/50">
+            {/* Weekday Headers */}
+            <div className="mb-2 grid grid-cols-7 gap-1">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <div key={day} className="py-2 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar Days */}
+            {(() => {
+              const days = getDaysInMonth(currentMonth)
+              const year = currentMonth.getFullYear()
+              const month = currentMonth.getMonth()
+              const bookingsByDate = groupBookingsByDate(bookings)
+
+              return (
+                <div className="grid grid-cols-7 gap-1">
+                  {days.map((day, index) => {
+                    if (day === null) {
+                      return <div key={`empty-${index}`} className="min-h-[100px] bg-slate-50/50" />
+                    }
+
+                    const dateString = formatDate(year, month, day)
+                    const dayBookings = bookingsByDate[dateString] || []
+                    const isToday = new Date().toISOString().split('T')[0] === dateString
+
+                    return (
+                      <div
+                        key={day}
+                        className={`min-h-[100px] border p-2 transition hover:bg-slate-50 ${
+                          isToday ? 'border-blue-300 bg-blue-50/30' : 'border-slate-100'
+                        }`}
+                      >
+                        <div className={`mb-1 text-right text-sm font-medium ${isToday ? 'text-blue-600' : 'text-slate-700'}`}>
+                          {day}
+                        </div>
+                        {/* Day cell with group hover - all bookings expand together */}
+                        <div className="group/day relative min-h-[60px]">
+                          {/* Normal view - max 2 bookings */}
+                          <div className="space-y-1">
+                            {dayBookings.slice(0, 2).map((booking) => (
+                              <div
+                                key={booking.id}
+                                className={`w-full cursor-default overflow-hidden rounded border px-1.5 py-1 text-left text-xs ${getStatusColors(booking.status)}`}
+                              >
+                                <div className="truncate font-medium">{booking.resourceName}</div>
+                                <div className="text-[10px] opacity-75">
+                                  {booking.startTime} - {booking.endTime}
+                                </div>
+                              </div>
+                            ))}
+                            {dayBookings.length > 2 && (
+                              <div className="w-full rounded bg-slate-100 px-1.5 py-1 text-center text-xs font-medium text-slate-600">
+                                +{dayBookings.length - 2} more
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Hover overlay - appears fixed above the cell, shows all bookings */}
+                          {dayBookings.length > 0 && (
+                            <div className="pointer-events-none absolute bottom-full left-1/4 z-50 mb-2 hidden w-[260px] -translate-x-1/2 transform flex-col gap-2.5 rounded-lg border border-slate-300 bg-white p-[18px] shadow-lg group-hover/day:flex">
+                              {/* Arrow pointing down */}
+                              <div className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-slate-200 bg-white" />
+                              {/* All bookings in this day */}
+                              <div className="relative z-10 max-h-[100px] overflow-y-auto space-y-2">
+                                {dayBookings.map((booking, idx) => {
+                                  const statusGlow = booking.status === 'PENDING' ? 'shadow-amber-300' : booking.status === 'APPROVED' ? 'shadow-emerald-200' : 'shadow-rose-200'
+                                  return (
+                                    <div
+                                      key={booking.id}
+                                      className={`rounded border px-[10px] py-[6px] text-sm ${getStatusColors(booking.status)} ${statusGlow} shadow-sm`}
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="font-medium text-sm">{booking.resourceName}</span>
+                                        <span className={`rounded-full px-[6px] py-1 text-[11px] font-semibold ${
+                                          booking.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                                          booking.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                                          'bg-rose-100 text-rose-700'
+                                        }`}>
+                                          {booking.status}
+                                        </span>
+                                      </div>
+                                      <div className="mt-1 text-xs opacity-80">
+                                        {booking.startTime} - {booking.endTime}
+                                      </div>
+                                      <div className="text-xs opacity-60">
+                                        {booking.resourceType}
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+          </div>
+
+          {/* Empty State */}
+          {!isLoading && bookings.length === 0 && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-12 text-center">
+              <svg className="mx-auto mb-3 h-12 w-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p className="text-sm text-slate-600">No bookings scheduled</p>
+            </div>
+          )}
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4 rounded-xl bg-slate-50 p-3 text-xs">
+            <span className="font-medium text-slate-600">Status:</span>
+            <div className="flex items-center gap-1.5">
+              <div className="h-3 w-3 rounded-full bg-amber-400" />
+              <span className="text-slate-600">Pending</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-3 w-3 rounded-full bg-emerald-400" />
+              <span className="text-slate-600">Approved</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-3 w-3 rounded-full bg-rose-400" />
+              <span className="text-slate-600">Rejected</span>
+            </div>
+          </div>
         </div>
       )}
 
