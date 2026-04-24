@@ -156,7 +156,14 @@ function App() {
                       : isTechnicianDashboardPage
                         ? (
                             session
-                              ? (session.role === 'TECHNICIAN' ? <TechnicianDashboard /> : <LoginPage />)
+                              ? (session.role === 'TECHNICIAN' ? <TechnicianDashboard /> : (
+                                  <main className="min-h-screen bg-slate-50">
+                                    <div className="mx-auto w-full max-w-2xl px-4 py-16 text-center">
+                                      <h1 className="text-2xl font-semibold text-slate-900">Access denied</h1>
+                                      <p className="mt-2 text-sm text-slate-500">Only technicians can access the technician dashboard.</p>
+                                    </div>
+                                  </main>
+                                ))
                               : <LoginPage />
                           )
                       : (
