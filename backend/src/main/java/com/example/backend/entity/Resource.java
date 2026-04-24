@@ -2,6 +2,8 @@ package com.example.backend.entity;
 
 import com.example.backend.enums.ResourceStatus;
 import com.example.backend.enums.ResourceType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -56,9 +58,11 @@ public class Resource {
     @Column(length = 500)
     private String description;
 
+    @JsonIgnore
     @OneToOne(mappedBy = "resource", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private com.example.backend.entity.EquipmentMetadata equipmentMetadata;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "resource", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<com.example.backend.entity.ResourceImage> images = new ArrayList<>();
 
