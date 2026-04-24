@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
 import { requestRegistrationOtp, verifyRegistrationOtp } from '../api/api'
 import { startGoogleOAuth } from '../utils/googleOAuth'
@@ -11,34 +11,71 @@ const initialFormState = {
   otp: '',
 }
 
+const OTP_LENGTH = 6
+
+const initialFieldErrors = {
+  fullName: '',
+  email: '',
+  password: '',
+  otp: '',
+}
+
 function validateRegistrationDetails(formValues) {
-  if (formValues.fullName.trim().length < 2) {
-    return 'Full name must be at least 2 characters.'
+  const errors = { ...initialFieldErrors }
+
+  const fullName = formValues.fullName.trim()
+  if (!fullName) {
+    errors.fullName = 'Full name is required.'
+  } else if (fullName.length < 2) {
+    errors.fullName = 'Full name must be at least 2 characters.'
+  } else if (!/^[A-Za-z ]+$/.test(fullName)) {
+    errors.fullName = 'Full name can contain only letters and spaces.'
+  }
+
+  const email = formValues.email.trim()
+  if (!email) {
+    errors.email = 'Email is required.'
   }
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailPattern.test(formValues.email.trim())) {
-    return 'Please enter a valid email address.'
+  if (email && !emailPattern.test(email)) {
+    errors.email = 'Please enter a valid email address.'
   }
 
   const password = formValues.password
-  if (password.length < 8) {
-    return 'Password must be at least 8 characters.'
+  if (!password) {
+    errors.password = 'Password is required.'
+  } else if (password.length < 8) {
+    errors.password = 'Password must be at least 8 characters.'
+  } else if (password.length > 72) {
+    errors.password = 'Password must be at most 72 characters.'
+  } else if (!/[A-Z]/.test(password)) {
+    errors.password = 'Password must include at least one uppercase letter.'
+  } else if (!/[a-z]/.test(password)) {
+    errors.password = 'Password must include at least one lowercase letter.'
+  } else if (!/\d/.test(password)) {
+    errors.password = 'Password must include at least one number.'
+  } else if (!/[^A-Za-z0-9]/.test(password)) {
+    errors.password = 'Password must include at least one special character.'
   }
 
-  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
-    return 'Password must include at least one letter and one number.'
-  }
-
-  return ''
+  return errors
 }
 
 function validateOtp(otpValue) {
+  if (!otpValue.trim()) {
+    return 'OTP is required.'
+  }
+
   if (!/^\d{6}$/.test(otpValue.trim())) {
     return 'OTP must be a 6-digit number.'
   }
 
   return ''
+}
+
+function hasValidationErrors(errors) {
+  return Object.values(errors).some(Boolean)
 }
 
 function formatOtpExpiry(expiresAt) {
@@ -68,6 +105,8 @@ export default function SignUpPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [otpStep, setOtpStep] = useState(false)
   const [otpExpiresAt, setOtpExpiresAt] = useState(null)
+  const [fieldErrors, setFieldErrors] = useState(initialFieldErrors)
+  const otpInputRefs = useRef([])
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search)
@@ -79,12 +118,131 @@ export default function SignUpPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!otpStep) {
+      return
+    }
+
+    otpInputRefs.current[0]?.focus()
+  }, [otpStep])
+
   const handleChange = (event) => {
     const { name, value } = event.target
     setFormValues((prev) => ({
       ...prev,
       [name]: value,
     }))
+
+    setFieldErrors((prev) => ({
+      ...prev,
+      [name]: '',
+    }))
+  }
+
+  const handleOtpDigitChange = (index, rawValue) => {
+    const digit = rawValue.replace(/\D/g, '').slice(-1)
+    const nextDigits = Array.from({ length: OTP_LENGTH }, (_, digitIndex) => formValues.otp[digitIndex] ?? '')
+    nextDigits[index] = digit
+
+    setFormValues((prev) => ({
+      ...prev,
+      otp: nextDigits.join(''),
+    }))
+
+    setFieldErrors((prev) => ({
+      ...prev,
+      otp: '',
+    }))
+
+    if (digit && index < OTP_LENGTH - 1) {
+      otpInputRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (index, event) => {
+    const allowedControlKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End']
+
+    if (event.key === 'Backspace') {
+      event.preventDefault()
+      const nextDigits = Array.from({ length: OTP_LENGTH }, (_, digitIndex) => formValues.otp[digitIndex] ?? '')
+
+      if (nextDigits[index]) {
+        nextDigits[index] = ''
+      } else if (index > 0) {
+        nextDigits[index - 1] = ''
+        otpInputRefs.current[index - 1]?.focus()
+      }
+
+      setFormValues((prev) => ({
+        ...prev,
+        otp: nextDigits.join(''),
+      }))
+
+      setFieldErrors((prev) => ({
+        ...prev,
+        otp: '',
+      }))
+      return
+    }
+
+    if (event.key === 'Delete') {
+      event.preventDefault()
+      const nextDigits = Array.from({ length: OTP_LENGTH }, (_, digitIndex) => formValues.otp[digitIndex] ?? '')
+      nextDigits[index] = ''
+
+      setFormValues((prev) => ({
+        ...prev,
+        otp: nextDigits.join(''),
+      }))
+
+      setFieldErrors((prev) => ({
+        ...prev,
+        otp: '',
+      }))
+      return
+    }
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      if (index > 0) {
+        otpInputRefs.current[index - 1]?.focus()
+      }
+      return
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      if (index < OTP_LENGTH - 1) {
+        otpInputRefs.current[index + 1]?.focus()
+      }
+      return
+    }
+
+    if (!allowedControlKeys.includes(event.key) && event.key.length === 1 && !/\d/.test(event.key)) {
+      event.preventDefault()
+    }
+  }
+
+  const handleOtpPaste = (event) => {
+    event.preventDefault()
+    const pastedDigits = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH)
+
+    if (!pastedDigits) {
+      return
+    }
+
+    setFormValues((prev) => ({
+      ...prev,
+      otp: pastedDigits,
+    }))
+
+    setFieldErrors((prev) => ({
+      ...prev,
+      otp: '',
+    }))
+
+    const focusIndex = Math.min(pastedDigits.length, OTP_LENGTH - 1)
+    otpInputRefs.current[focusIndex]?.focus()
   }
 
   const handleRequestOtp = async (event) => {
@@ -92,9 +250,15 @@ export default function SignUpPage() {
     setErrorMessage('')
     setSuccessMessage('')
 
-    const validationError = validateRegistrationDetails(formValues)
-    if (validationError) {
-      setErrorMessage(validationError)
+    const validationErrors = validateRegistrationDetails(formValues)
+    setFieldErrors((prev) => ({
+      ...prev,
+      ...validationErrors,
+      otp: '',
+    }))
+
+    if (hasValidationErrors(validationErrors)) {
+      setErrorMessage('Please fix the highlighted fields.')
       return
     }
 
@@ -135,7 +299,11 @@ export default function SignUpPage() {
 
     const otpError = validateOtp(formValues.otp)
     if (otpError) {
-      setErrorMessage(otpError)
+      setFieldErrors((prev) => ({
+        ...prev,
+        otp: otpError,
+      }))
+      setErrorMessage('Please fix the highlighted fields.')
       return
     }
 
@@ -184,9 +352,15 @@ export default function SignUpPage() {
     setErrorMessage('')
     setSuccessMessage('')
 
-    const validationError = validateRegistrationDetails(formValues)
-    if (validationError) {
-      setErrorMessage(validationError)
+    const validationErrors = validateRegistrationDetails(formValues)
+    setFieldErrors((prev) => ({
+      ...prev,
+      ...validationErrors,
+      otp: '',
+    }))
+
+    if (hasValidationErrors(validationErrors)) {
+      setErrorMessage('Please fix the highlighted fields.')
       return
     }
 
@@ -221,11 +395,17 @@ export default function SignUpPage() {
     setOtpExpiresAt(null)
     setErrorMessage('')
     setSuccessMessage('')
+    setFieldErrors((prev) => ({
+      ...prev,
+      otp: '',
+    }))
     setFormValues((prev) => ({
       ...prev,
       otp: '',
     }))
   }
+
+  const otpDigits = Array.from({ length: OTP_LENGTH }, (_, index) => formValues.otp[index] ?? '')
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-0">
@@ -250,9 +430,14 @@ export default function SignUpPage() {
                   placeholder="Full name"
                   value={formValues.fullName}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-900"
+                  className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none ${
+                    fieldErrors.fullName ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-slate-900'
+                  }`}
                   required
                 />
+                {fieldErrors.fullName && (
+                  <p className="text-xs text-red-600">{fieldErrors.fullName}</p>
+                )}
 
                 <input
                   name="email"
@@ -260,9 +445,14 @@ export default function SignUpPage() {
                   placeholder="Email address"
                   value={formValues.email}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-900"
+                  className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none ${
+                    fieldErrors.email ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-slate-900'
+                  }`}
                   required
                 />
+                {fieldErrors.email && (
+                  <p className="text-xs text-red-600">{fieldErrors.email}</p>
+                )}
 
                 <input
                   name="password"
@@ -270,9 +460,14 @@ export default function SignUpPage() {
                   placeholder="Password"
                   value={formValues.password}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-900"
+                  className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none ${
+                    fieldErrors.password ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-slate-900'
+                  }`}
                   required
                 />
+                {fieldErrors.password && (
+                  <p className="text-xs text-red-600">{fieldErrors.password}</p>
+                )}
 
                 <button
                   type="submit"
@@ -313,17 +508,32 @@ export default function SignUpPage() {
                   className="w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm text-slate-500 outline-none"
                 />
 
-                <input
-                  name="otp"
-                  type="text"
-                  placeholder="6-digit OTP"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={formValues.otp}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm tracking-[0.2em] outline-none focus:border-slate-900"
-                  required
-                />
+                <div className="flex items-center justify-between gap-2" onPaste={handleOtpPaste}>
+                  {otpDigits.map((digit, index) => (
+                    <input
+                      key={index}
+                      ref={(element) => {
+                        otpInputRefs.current[index] = element
+                      }}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="one-time-code"
+                      aria-label={`OTP digit ${index + 1}`}
+                      maxLength={1}
+                      value={digit}
+                      onChange={(event) => handleOtpDigitChange(index, event.target.value)}
+                      onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                      className={`h-12 w-12 rounded-lg border text-center text-lg font-semibold tracking-normal outline-none sm:h-14 sm:w-14 ${
+                        fieldErrors.otp ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-slate-900'
+                      }`}
+                      required
+                    />
+                  ))}
+                </div>
+                {fieldErrors.otp && (
+                  <p className="text-xs text-red-600">{fieldErrors.otp}</p>
+                )}
 
                 <button
                   type="submit"
