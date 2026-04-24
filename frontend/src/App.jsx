@@ -12,6 +12,7 @@ import ResourcesPage from './pages/ResourcesPage'
 import ResourceDetailsCard from './components/ResourceDetailsCard'
 import AboutUs from './components/AboutUs'
 import BookingCreatePage from './pages/BookingCreatePage'
+import AllNotifications from './pages/AllNotifications'
 import { consumeGoogleOAuthRedirect } from './utils/googleOAuth'
 import { readAuthSession, authSessionChangeEvent } from './utils/authSession'
 
@@ -103,6 +104,8 @@ function App() {
   const isBookingCreatePage = /^\/bookings\/create\/\d+$/.test(currentPath) || /^\/resources\/\d+\/book-now$/.test(currentPath)
   const isMyBookingsPage = currentPath.startsWith('/bookings/my')
   const isAllBookingsPage = currentPath.startsWith('/bookings/all')
+  const decodedPath = decodeURIComponent(currentPath)
+  const isAllNotificationsPage = /^\/[^/]+\/All notifications$/i.test(decodedPath)
 
   const isAuthPage = isLoginPage || isSignUpPage
   const showChrome = !isAuthPage
@@ -127,6 +130,8 @@ function App() {
               ? (session ? (session.role === 'ADMIN' ? <AdminDashboard /> : <UserDashboard />) : <LoginPage />)
             : isAllBookingsPage
               ? (session?.role === 'ADMIN' ? <AdminDashboard /> : <LoginPage />)
+            : isAllNotificationsPage
+              ? (session ? <AllNotifications /> : <LoginPage />)
             : isResourceDetailsPage
                   ? <ResourceDetailsCard />
                 : isResourcesPage

@@ -50,6 +50,15 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
+    public List<NotificationResponse> listAllByUserEmail(String email) {
+        AppUser user = findByEmail(email);
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public int countNotificationsByUserEmail(String email) {
         AppUser user = findByEmail(email);
         return (int) notificationRepository.countByUserId(user.getId());

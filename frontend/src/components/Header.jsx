@@ -23,6 +23,12 @@ function navigateTo(pathname) {
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
+function buildAllNotificationsPath(authSession) {
+  const fallbackName = authSession?.email?.split('@')?.[0] || 'user'
+  const baseName = authSession?.fullName?.trim() || fallbackName
+  return `/${encodeURIComponent(baseName)}/All%20notifications`
+}
+
 function getDashboardHomePath(role) {
   if (role === 'ADMIN') {
     return '/admin-dashboard'
@@ -182,6 +188,24 @@ export default function Header() {
     window.addEventListener('unipilot-notification-refresh', handler)
     return () => window.removeEventListener('unipilot-notification-refresh', handler)
   }, [loadNotifications])
+
+  useEffect(() => {
+    const handleViewMoreNotifications = () => {
+      if (!authSession?.token) {
+        navigateTo('/login')
+        return
+      }
+
+      setIsNotificationMenuOpen(false)
+      setIsMenuOpen(false)
+      navigateTo(buildAllNotificationsPath(authSession))
+    }
+
+    window.addEventListener('unipilot-notification-view-more', handleViewMoreNotifications)
+    return () => {
+      window.removeEventListener('unipilot-notification-view-more', handleViewMoreNotifications)
+    }
+  }, [authSession])
 
   useEffect(() => {
     const handleOutsideClick = (event) => {

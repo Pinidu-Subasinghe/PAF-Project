@@ -101,6 +101,12 @@ export async function getMyNotifications() {
   })
 }
 
+export async function getAllMyNotifications() {
+  return request('/api/v1/notifications/me/all', {
+    headers: getAuthHeader(),
+  })
+}
+
 export async function markNotificationAsRead(notificationId) {
   return request(`/api/v1/notifications/${notificationId}/read`, {
     method: 'PATCH',
