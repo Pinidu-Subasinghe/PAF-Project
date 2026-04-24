@@ -342,6 +342,20 @@ export async function getAllBookings(status) {
   })
 }
 
+export async function getAllBookingsForAnalytics(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return request(`/api/bookings/all${query}`, {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function clearBookingForAdmin(bookingId) {
+  return request(`/api/bookings/${bookingId}/clear`, {
+    method: 'PUT',
+    headers: getAuthHeader(),
+  })
+}
+
 export async function approveBooking(bookingId) {
   return request(`/api/bookings/${bookingId}/approve`, {
     method: 'PUT',

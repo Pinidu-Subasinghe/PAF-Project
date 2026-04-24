@@ -19,7 +19,9 @@ import {
 import {
   approveBooking,
   cancelBooking,
+  clearBookingForAdmin,
   getAllBookings,
+  getAllBookingsForAnalytics,
   getAllResources,
   getMyBookings,
   rejectBooking,
@@ -55,6 +57,7 @@ function formatDateTime(date, startTime, endTime) {
 
 export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const [bookings, setBookings] = useState([])
+  const [allBookingsForAnalytics, setAllBookingsForAnalytics] = useState([])
   const [statusFilter, setStatusFilter] = useState('')
   const [resourceTypeFilter, setResourceTypeFilter] = useState('')
   const [resourceIdSearch, setResourceIdSearch] = useState('')
@@ -121,10 +124,20 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     setErrorMessage('')
 
     try {
-      const response = isAllScope
-        ? await getAllBookings(statusFilter || undefined)
-        : await getMyBookings()
-      setBookings(Array.isArray(response) ? response : [])
+      if (isAllScope) {
+        // For admin: fetch filtered bookings (excludes cleared) for table
+        const response = await getAllBookings(statusFilter || undefined)
+        setBookings(Array.isArray(response) ? response : [])
+
+        // Also fetch all bookings including cleared for analytics
+        const allResponse = await getAllBookingsForAnalytics(statusFilter || undefined)
+        setAllBookingsForAnalytics(Array.isArray(allResponse) ? allResponse : [])
+      } else {
+        // For user: just fetch my bookings
+        const response = await getMyBookings()
+        setBookings(Array.isArray(response) ? response : [])
+        setAllBookingsForAnalytics([])
+      }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to load bookings right now.')
     } finally {
@@ -136,6 +149,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     loadBookings()
   }, [loadBookings])
 
+  // Visible bookings for Admin table (backend filters cleared bookings + applies filters)
   const sortedBookings = useMemo(
     () => {
       let filtered = [...bookings]
@@ -248,6 +262,28 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     }
   }
 
+  // Clear booking for admin (persistent via backend)
+  const handleClear = async (bookingId) => {
+    setIsActionLoading(true)
+    try {
+      await clearBookingForAdmin(bookingId)
+      await loadBookings() // Reload to reflect cleared status
+      closeBookingModal()
+      Swal.fire({
+        title: 'Cleared',
+        text: 'Booking cleared from view. Data retained for analytics.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+      })
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to clear booking.')
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  // Legacy handleCancel for user cancel (still uses API)
   const handleCancel = async (bookingId) => {
     setIsActionLoading(true)
     setErrorMessage('')
@@ -467,13 +503,15 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
-  // Analytics data calculations
+  // Analytics data calculations - uses ALL bookings (including cleared ones) for accurate analytics
   const analyticsData = useMemo(() => {
-    const total = sortedBookings.length
-    const approved = sortedBookings.filter(b => b.status === 'APPROVED').length
-    const pending = sortedBookings.filter(b => b.status === 'PENDING').length
-    const rejected = sortedBookings.filter(b => b.status === 'REJECTED').length
-    const cancelled = sortedBookings.filter(b => b.status === 'CANCELLED').length
+    const analyticsSource = isAllScope && allBookingsForAnalytics.length > 0 ? allBookingsForAnalytics : bookings
+
+    const total = analyticsSource.length
+    const approved = analyticsSource.filter(b => b.status === 'APPROVED').length
+    const pending = analyticsSource.filter(b => b.status === 'PENDING').length
+    const rejected = analyticsSource.filter(b => b.status === 'REJECTED').length
+    const cancelled = analyticsSource.filter(b => b.status === 'CANCELLED').length
 
     // Bookings by status for pie chart
     const statusData = [
@@ -483,29 +521,43 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       { name: 'Cancelled', value: cancelled, color: '#64748b' },
     ].filter(item => item.value > 0)
 
-    // Bookings by resource type for bar chart
+    // Bookings by resource type for bar chart (uses ALL bookings)
     const resourceTypeData = Object.entries(
-      sortedBookings.reduce((acc, booking) => {
+      analyticsSource.reduce((acc, booking) => {
         const type = resourceTypeDisplayNames[booking.resourceType] || booking.resourceType
         acc[type] = (acc[type] || 0) + 1
         return acc
       }, {})
     ).map(([name, value]) => ({ name, value }))
 
-    // Bookings over time (last 30 days) for line chart
-    const last30Days = Array.from({ length: 30 }, (_, i) => {
-      const date = new Date()
-      date.setDate(date.getDate() - (29 - i))
-      return date.toISOString().split('T')[0]
+    // Bookings over time (last 30 days) for line chart - FIXED
+    const getLast30Days = () => {
+      const days = []
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        days.push(d.toISOString().split('T')[0])
+      }
+      return days
+    }
+
+    const last30Days = getLast30Days()
+
+    const timeData = last30Days.map(date => {
+      const count = analyticsSource.filter(b => {
+        // Handle different date formats (YYYY-MM-DD from API)
+        const bookingDate = b.date ? b.date.split('T')[0] : ''
+        return bookingDate === date
+      }).length
+
+      return {
+        date: date.slice(5), // Show MM-DD
+        bookings: count,
+      }
     })
 
-    const timeData = last30Days.map(date => ({
-      date: date.slice(5),
-      bookings: sortedBookings.filter(b => b.date === date).length,
-    }))
-
-    // Top 5 most booked resources
-    const resourceBookings = sortedBookings.reduce((acc, booking) => {
+    // Top 5 most booked resources (uses ALL bookings)
+    const resourceBookings = analyticsSource.reduce((acc, booking) => {
       const key = `${booking.resourceName} (${booking.resourceType})`
       acc[key] = (acc[key] || 0) + 1
       return acc
@@ -527,7 +579,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       timeData,
       topResources,
     }
-  }, [sortedBookings])
+  }, [bookings, allBookingsForAnalytics, isAllScope])
 
   // Export to CSV function
   const exportToCSV = () => {
@@ -967,7 +1019,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                         <button
                           type="button"
                           disabled={isActionLoading || selectedBooking.status === 'PENDING'}
-                          onClick={() => selectedBooking.status !== 'PENDING' && handleCancel(selectedBooking.id)}
+                          onClick={() => selectedBooking.status !== 'PENDING' && handleClear(selectedBooking.id)}
                           className={`rounded-full border px-5 py-2.5 text-sm font-semibold transition ${
                             selectedBooking.status === 'PENDING'
                               ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
