@@ -491,9 +491,12 @@ export default function SignUpPage() {
                   className="w-full flex items-center justify-center gap-2 rounded-lg border border-slate-300 py-2.5 text-sm font-medium hover:bg-slate-50"
                 >
                   <svg className="h-5 w-5" viewBox="0 0 48 48">
-                    <path fill="#FFC107" d="M43.6 20.5H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+                    <path fill="#EA4335" d="M24 9.5c3.2 0 6.1 1.1 8.4 3.2l6.3-6.3C34.5 2.6 29.6 0 24 0 14.6 0 6.6 5.5 2.7 13.5l7.4 5.8C12.1 13.1 17.6 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.5 24.5c0-1.7-.2-3.3-.5-4.9H24v9.3h12.6c-.5 2.9-2.2 5.4-4.7 7.1l7.3 5.7c4.3-4 7.3-9.9 7.3-17.2z"/>
+                    <path fill="#FBBC05" d="M10.1 28.3c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.4-5.8C1 16.2 0 19.9 0 23.7s1 7.5 2.7 10.4l7.4-5.8z"/>
+                    <path fill="#34A853" d="M24 47c6.5 0 11.9-2.1 15.9-5.7l-7.3-5.7c-2 1.3-4.6 2.1-8.6 2.1-6.4 0-11.9-3.6-13.9-8.8l-7.4 5.8C6.6 41.5 14.6 47 24 47z"/>
                   </svg>
-                  Continue with Google
+                  Register with Google
                 </button>
               </>
             )}
