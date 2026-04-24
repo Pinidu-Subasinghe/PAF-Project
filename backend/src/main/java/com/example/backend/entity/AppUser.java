@@ -42,6 +42,15 @@ public class AppUser {
     @Column(nullable = false, length = 20)
     private Role role = Role.USER;
 
+    @Column(name = "profile_notifications_enabled")
+    private Boolean profileNotificationsEnabled = true;
+
+    @Column(name = "booking_notifications_enabled")
+    private Boolean bookingNotificationsEnabled = true;
+
+    @Column(name = "ticket_notifications_enabled")
+    private Boolean ticketNotificationsEnabled = true;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -102,6 +111,30 @@ public class AppUser {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public Boolean getProfileNotificationsEnabled() {
+        return profileNotificationsEnabled;
+    }
+
+    public void setProfileNotificationsEnabled(Boolean profileNotificationsEnabled) {
+        this.profileNotificationsEnabled = profileNotificationsEnabled;
+    }
+
+    public Boolean getBookingNotificationsEnabled() {
+        return bookingNotificationsEnabled;
+    }
+
+    public void setBookingNotificationsEnabled(Boolean bookingNotificationsEnabled) {
+        this.bookingNotificationsEnabled = bookingNotificationsEnabled;
+    }
+
+    public Boolean getTicketNotificationsEnabled() {
+        return ticketNotificationsEnabled;
+    }
+
+    public void setTicketNotificationsEnabled(Boolean ticketNotificationsEnabled) {
+        this.ticketNotificationsEnabled = ticketNotificationsEnabled;
     }
 
     public Instant getCreatedAt() {

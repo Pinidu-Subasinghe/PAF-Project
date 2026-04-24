@@ -107,6 +107,20 @@ export async function getAllMyNotifications() {
   })
 }
 
+export async function getMyNotificationPreferences() {
+  return request('/api/v1/notifications/preferences/me', {
+    headers: getAuthHeader(),
+  })
+}
+
+export async function updateMyNotificationPreferences(payload) {
+  return request('/api/v1/notifications/preferences/me', {
+    method: 'PUT',
+    body: payload,
+    headers: getAuthHeader(),
+  })
+}
+
 export async function markNotificationAsRead(notificationId) {
   return request(`/api/v1/notifications/${notificationId}/read`, {
     method: 'PATCH',

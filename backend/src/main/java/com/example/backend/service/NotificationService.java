@@ -1,5 +1,7 @@
 package com.example.backend.service;
 
+import com.example.backend.dto.request.NotificationPreferencesUpdateRequest;
+import com.example.backend.dto.response.NotificationPreferencesResponse;
 import com.example.backend.dto.response.NotificationResponse;
 import com.example.backend.entity.AppUser;
 import com.example.backend.entity.Notification;
@@ -62,6 +64,25 @@ public class NotificationService {
     public int countNotificationsByUserEmail(String email) {
         AppUser user = findByEmail(email);
         return (int) notificationRepository.countByUserId(user.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public NotificationPreferencesResponse getNotificationPreferencesByEmail(String email) {
+        AppUser user = findByEmail(email);
+        return toPreferencesResponse(user);
+    }
+
+    @Transactional
+    public NotificationPreferencesResponse updateNotificationPreferencesByEmail(
+            String email,
+            NotificationPreferencesUpdateRequest request
+    ) {
+        AppUser user = findByEmail(email);
+        user.setProfileNotificationsEnabled(request.profileNotificationsEnabled());
+        user.setBookingNotificationsEnabled(request.bookingNotificationsEnabled());
+        user.setTicketNotificationsEnabled(request.ticketNotificationsEnabled());
+        AppUser saved = userRepository.save(user);
+        return toPreferencesResponse(saved);
     }
 
     @Transactional
@@ -144,6 +165,10 @@ public class NotificationService {
         if (userId == null) return;
 
         userRepository.findById(userId).ifPresent(user -> {
+            if (!isNotificationEnabledForType(user, type)) {
+                return;
+            }
+
             Notification notification = new Notification();
             notification.setUser(user);
             notification.setType(type);
@@ -168,6 +193,10 @@ public class NotificationService {
         if (users == null || users.isEmpty()) return;
 
         for (AppUser user : users) {
+            if (!isNotificationEnabledForType(user, type)) {
+                continue;
+            }
+
             Notification notification = new Notification();
             notification.setUser(user);
             notification.setType(type);
@@ -201,5 +230,29 @@ public class NotificationService {
                 notification.getCreatedAt(),
                 notification.getReadAt()
         );
+    }
+
+    private NotificationPreferencesResponse toPreferencesResponse(AppUser user) {
+        return new NotificationPreferencesResponse(
+                isEnabled(user.getProfileNotificationsEnabled()),
+                isEnabled(user.getBookingNotificationsEnabled()),
+                isEnabled(user.getTicketNotificationsEnabled())
+        );
+    }
+
+    private boolean isNotificationEnabledForType(AppUser user, NotificationType type) {
+        if (type == null) {
+            return true;
+        }
+
+        return switch (type) {
+            case PASSWORD_SETUP_REQUIRED -> isEnabled(user.getProfileNotificationsEnabled());
+            case BOOKING_REQUEST, BOOKING_DECISION, BOOKING_CANCELLED -> isEnabled(user.getBookingNotificationsEnabled());
+            case TICKET_CREATED, TICKET_ASSIGNED, TICKET_RESOLVED, TICKET_REJECTED -> isEnabled(user.getTicketNotificationsEnabled());
+        };
+    }
+
+    private boolean isEnabled(Boolean value) {
+        return value == null || value;
     }
 }
