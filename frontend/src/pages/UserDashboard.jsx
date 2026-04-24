@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import DashboardShell from '../components/DashboardShell'
 import Profile from '../components/user/Profile'
 import ChangePassword from '../components/user/ChangePassword'
@@ -95,6 +95,19 @@ export default function UserDashboard() {
 	const navItems = useMemo(() => (role === 'ADMIN' ? adminNavItems : userNavItems), [role])
 	const [activeItemId, setActiveItemId] = useState(() => readRequestedTab(navItems) ?? navItems[0].id)
 
+	const refreshMyTickets = useCallback(async () => {
+		setTicketsLoading(true)
+		setTicketsError('')
+		try {
+			const response = await getMyIncidentTickets()
+			setMyTickets(Array.isArray(response) ? response : [])
+		} catch (error) {
+			setTicketsError(error instanceof Error ? error.message : 'Unable to load tickets right now.')
+		} finally {
+			setTicketsLoading(false)
+		}
+	}, [])
+
 	useEffect(() => {
 		setActiveItemId((currentActiveItemId) => {
 			const requestedTab = readRequestedTab(navItems)
@@ -112,22 +125,8 @@ export default function UserDashboard() {
 		if (!session) {
 			return
 		}
-
-		const loadTickets = async () => {
-			setTicketsLoading(true)
-			setTicketsError('')
-			try {
-				const response = await getMyIncidentTickets()
-				setMyTickets(Array.isArray(response) ? response : [])
-			} catch (error) {
-				setTicketsError(error instanceof Error ? error.message : 'Unable to load tickets right now.')
-			} finally {
-				setTicketsLoading(false)
-			}
-		}
-
-		loadTickets()
-	}, [session])
+		refreshMyTickets()
+	}, [session, refreshMyTickets])
 
 	useEffect(() => {
 		const syncActiveItemWithLocation = () => {
@@ -165,12 +164,7 @@ export default function UserDashboard() {
 		queryParams.delete('ticketId')
 		window.history.pushState(null, '', `${pathname}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`)
 		setSelectedTicketId(null)
-		setTicketsLoading(true)
-		setTicketsError('')
-		getMyIncidentTickets()
-			.then((response) => setMyTickets(Array.isArray(response) ? response : []))
-			.catch((error) => setTicketsError(error instanceof Error ? error.message : 'Unable to load tickets right now.'))
-			.finally(() => setTicketsLoading(false))
+		void refreshMyTickets()
 	}
 
 	const handleDeleteTicket = async (ticket) => {
@@ -181,11 +175,6 @@ export default function UserDashboard() {
 		const canDelete = ['OPEN', 'RESOLVED', 'REJECTED', 'CLOSED'].includes(ticket.status)
 		if (!canDelete) {
 			setTicketsError('Ticket cannot be deleted while it is in progress.')
-			return
-		}
-
-		const confirmed = window.confirm(`Delete ticket #${ticket.id} permanently? This action cannot be undone.`)
-		if (!confirmed) {
 			return
 		}
 
@@ -254,7 +243,9 @@ export default function UserDashboard() {
 				onClose={() => setRaiseTicketBooking(null)}
 				onCreated={() => {
 					setRaiseTicketBooking(null)
+					setSelectedTicketId(null)
 					setActiveItemId('my-tickets')
+					void refreshMyTickets()
 				}}
 			/>
 		</>
