@@ -194,7 +194,7 @@ public class BookingService {
             throw new IllegalArgumentException("Only pending bookings can be updated");
         }
 
-        Resource resource = findResourceById(booking.getResourceId());
+        Resource resource = findResourceById(request.resourceId());
 
         validateDate(request.date());
         validateTimeWindow(request.startTime(), request.endTime());
@@ -209,12 +209,13 @@ public class BookingService {
         // Check for conflicts excluding this booking itself
         validateUpdateBookingConflict(
             bookingId,
-            booking.getResourceId(),
+            request.resourceId(),
             request.date(),
             request.startTime(),
             request.endTime()
         );
 
+        booking.setResourceId(request.resourceId());
         booking.setDate(request.date());
         booking.setStartTime(request.startTime());
         booking.setEndTime(request.endTime());
@@ -479,9 +480,12 @@ public class BookingService {
     }
 
     private BookingResponse toResponse(Booking booking) {
+        Resource resource = findResourceById(booking.getResourceId());
         return new BookingResponse(
                 booking.getId(),
                 booking.getResourceId(),
+                resource.getType().name(),
+                resource.getName(),
                 booking.getUserId(),
                 booking.getDate(),
                 booking.getStartTime(),
