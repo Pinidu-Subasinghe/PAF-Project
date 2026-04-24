@@ -54,6 +54,21 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getAllBookings(status));
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<BookingResponse>> getAllBookingsIncludingCleared(
+            @RequestParam(required = false) BookingStatus status
+    ) {
+        return ResponseEntity.ok(bookingService.getAllBookingsIncludingCleared(status));
+    }
+
+    @PutMapping("/{id}/clear")
+    public ResponseEntity<BookingResponse> clearBookingForAdmin(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(bookingService.clearBookingForAdmin(id, requireEmail(authentication)));
+    }
+
     @PutMapping("/{id}/approve")
     public ResponseEntity<BookingResponse> approveBooking(@PathVariable Long id, Authentication authentication) {
         return ResponseEntity.ok(bookingService.approveBooking(id, requireEmail(authentication)));
