@@ -238,7 +238,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
         <button
           type="button"
           onClick={onBack}
-          className="rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 hover:border-slate-500"
+            className="w-full rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 hover:border-slate-500 sm:w-auto"
         >
           Back to list
         </button>
@@ -294,7 +294,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             type="text"
             value={formState.name}
             onChange={(event) => updateFormState((current) => ({ ...current, name: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
           {fieldErrors.name && <span className="text-xs text-rose-600">{fieldErrors.name}</span>}
         </label>
@@ -319,7 +319,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
                 },
               }))
             }}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           >
             {typeOptions.map((option) => (
               <option key={option} value={option}>{formatEnumLabel(option)}</option>
@@ -337,7 +337,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             value={formState.capacity}
             onChange={(event) => updateFormState((current) => ({ ...current, capacity: event.target.value }))}
             disabled={formState.type === 'EQUIPMENT'}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
           {fieldErrors.capacity && <span className="text-xs text-rose-600">{fieldErrors.capacity}</span>}
         </label>
@@ -349,7 +349,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             type="text"
             value={formState.location}
             onChange={(event) => updateFormState((current) => ({ ...current, location: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
           {fieldErrors.location && <span className="text-xs text-rose-600">{fieldErrors.location}</span>}
         </label>
@@ -363,7 +363,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             min="08:00"
             max="20:00"
             onChange={(event) => updateFormState((current) => ({ ...current, availableFrom: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
           {fieldErrors.availableFrom && <span className="text-xs text-rose-600">{fieldErrors.availableFrom}</span>}
         </label>
@@ -377,7 +377,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             min="08:00"
             max="20:00"
             onChange={(event) => updateFormState((current) => ({ ...current, availableTo: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
           {fieldErrors.availableTo && <span className="text-xs text-rose-600">{fieldErrors.availableTo}</span>}
         </label>
@@ -387,7 +387,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
           <select
             value={formState.status}
             onChange={(event) => updateFormState((current) => ({ ...current, status: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>{formatEnumLabel(option)}</option>
@@ -408,7 +408,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
                 validateAndSetErrors(formState, selectedCover, newAdditionalImages)
               }
             }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
           />
           {fieldErrors.coverImage && <span className="text-xs text-rose-600">{fieldErrors.coverImage}</span>}
           {!!visibleCover && !coverImage && (
@@ -429,7 +429,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
                 validateAndSetErrors(formState, coverImage, files)
               }
             }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
           />
           {fieldErrors.extraImages && <span className="text-xs text-rose-600">{fieldErrors.extraImages}</span>}
           {!!newAdditionalImages.length && (
@@ -446,7 +446,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             rows="3"
             value={formState.description}
             onChange={(event) => updateFormState((current) => ({ ...current, description: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
           {fieldErrors.description && <span className="text-xs text-rose-600">{fieldErrors.description}</span>}
         </label>
@@ -460,7 +460,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
                 <select
                   value={formState.equipment.category}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, category: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 >
                   {equipmentCategoryOptions.map((opt) => (
                     <option key={opt} value={opt}>{formatEnumLabel(opt)}</option>
@@ -474,7 +474,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
                   type="text"
                   value={formState.equipment.brand}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, brand: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
               </label>
 
@@ -484,7 +484,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
                   type="text"
                   value={formState.equipment.model}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, model: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
               </label>
 
@@ -494,7 +494,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
                   type="text"
                   value={formState.equipment.serialNumber}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, serialNumber: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
               </label>
 
@@ -504,7 +504,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
                   type="date"
                   value={formState.equipment.purchaseDate || ''}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, purchaseDate: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
               </label>
 
@@ -514,7 +514,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
                   rows="2"
                   value={formState.equipment.notes}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, notes: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
               </label>
             </div>
@@ -525,7 +525,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {isSubmitting ? 'Saving...' : 'Update Resource'}
           </button>
@@ -533,7 +533,7 @@ export default function AdminResourceInfoCard({ resourceId, onBack, onDeleted } 
             type="button"
             onClick={handleDelete}
             disabled={isSubmitting}
-            className="rounded-full border border-rose-300 px-5 py-2.5 text-sm font-semibold text-rose-700 transition hover:border-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-full border border-rose-300 px-5 py-2.5 text-sm font-semibold text-rose-700 transition hover:border-rose-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             Delete Resource
           </button>

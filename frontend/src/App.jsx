@@ -12,6 +12,7 @@ import ResourcesPage from './pages/ResourcesPage'
 import ResourceDetailsCard from './components/ResourceDetailsCard'
 import AboutUs from './components/AboutUs'
 import BookingCreatePage from './pages/BookingCreatePage'
+import AllNotifications from './pages/AllNotifications'
 import { consumeGoogleOAuthRedirect } from './utils/googleOAuth'
 import { readAuthSession, authSessionChangeEvent } from './utils/authSession'
 
@@ -103,15 +104,15 @@ function App() {
   const isBookingCreatePage = /^\/bookings\/create\/\d+$/.test(currentPath) || /^\/resources\/\d+\/book-now$/.test(currentPath)
   const isMyBookingsPage = currentPath.startsWith('/bookings/my')
   const isAllBookingsPage = currentPath.startsWith('/bookings/all')
+  const decodedPath = decodeURIComponent(currentPath)
+  const isAllNotificationsPage = /^\/[^/]+\/All notifications$/i.test(decodedPath)
 
   const isAuthPage = isLoginPage || isSignUpPage
   const showChrome = !isAuthPage
   const showScrollToTop = !isAuthPage && !isDashboardPage
   const showFooter = showChrome && !isDashboardPage
 
-  const appShellClass = isDashboardPage
-    ? 'h-screen'
-    : 'min-h-screen'
+  const appShellClass = 'min-h-screen'
 
   return (
     <div className={`${appShellClass} bg-slate-50 text-slate-900 flex flex-col`}>
@@ -127,6 +128,8 @@ function App() {
               ? (session ? (session.role === 'ADMIN' ? <AdminDashboard /> : <UserDashboard />) : <LoginPage />)
             : isAllBookingsPage
               ? (session?.role === 'ADMIN' ? <AdminDashboard /> : <LoginPage />)
+            : isAllNotificationsPage
+              ? (session ? <AllNotifications /> : <LoginPage />)
             : isResourceDetailsPage
                   ? <ResourceDetailsCard />
                 : isResourcesPage
@@ -151,7 +154,14 @@ function App() {
                       : isTechnicianDashboardPage
                         ? (
                             session
-                              ? (session.role === 'TECHNICIAN' ? <TechnicianDashboard /> : <LoginPage />)
+                              ? (session.role === 'TECHNICIAN' ? <TechnicianDashboard /> : (
+                                  <main className="min-h-screen bg-slate-50">
+                                    <div className="mx-auto w-full max-w-2xl px-4 py-16 text-center">
+                                      <h1 className="text-2xl font-semibold text-slate-900">Access denied</h1>
+                                      <p className="mt-2 text-sm text-slate-500">Only technicians can access the technician dashboard.</p>
+                                    </div>
+                                  </main>
+                                ))
                               : <LoginPage />
                           )
                       : (

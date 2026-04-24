@@ -254,7 +254,7 @@ export default function ResourceDetailsCard() {
         )}
 
         <div className="mt-10 flex justify-end">
-          {session && session.role === 'ADMIN' ? null : (
+          {session && (session.role === 'ADMIN' || session.role === 'TECHNICIAN') ? null : (
             session && session.role === 'USER' ? (
               <button 
                 type="button"
