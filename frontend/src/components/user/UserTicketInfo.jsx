@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
 	addIncidentTicketComment,
 	deleteIncidentTicketComment,
+	getResourceById,
 	updateIncidentTicketComment,
 } from '../../api/api'
 
@@ -248,6 +249,38 @@ export default function UserTicketInfo({
 	onRefresh,
 	isSubmitting = false,
 }) {
+	const [resolvedResource, setResolvedResource] = useState(null)
+
+	useEffect(() => {
+		let isMounted = true
+
+		if (!ticket?.resourceId) {
+			return () => {
+				isMounted = false
+			}
+		}
+
+		const loadResourceName = async () => {
+			try {
+				const resource = await getResourceById(ticket.resourceId)
+				if (isMounted) {
+					setResolvedResource({
+						id: Number(ticket.resourceId),
+						name: resource?.name ?? '',
+					})
+				}
+			} catch {
+				// Keep fallback rendering with Resource ID when name lookup fails.
+			}
+		}
+
+		loadResourceName()
+
+		return () => {
+			isMounted = false
+		}
+	}, [ticket?.resourceId])
+
 	if (!ticket) {
 		return (
 			<div className="rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-600">
@@ -258,6 +291,26 @@ export default function UserTicketInfo({
 
 	return (
 		<div className="space-y-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+			{/** Resource-related tickets should show both location and resource details. */}
+			{(() => {
+				const isResourceTicket = ticket.category === 'RESOURCE'
+				const hasLocation = Boolean(ticket.location)
+				const hasResource = Boolean(ticket.resourceId)
+				const resolvedResourceName = resolvedResource?.id === Number(ticket.resourceId)
+					? resolvedResource?.name
+					: ''
+				const resourceLabel = resolvedResourceName
+					? `Resource: ${resolvedResourceName}`
+					: (hasResource ? `Resource ID: ${ticket.resourceId}` : null)
+				const locationResourceText = isResourceTicket
+					? [
+						hasLocation ? ticket.location : null,
+						resourceLabel,
+					].filter(Boolean).join(' | ')
+					: (ticket.location || ticket.resourceId || 'Not provided')
+
+				return (
+					<>
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
 					<p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">Ticket details</p>
@@ -282,7 +335,7 @@ export default function UserTicketInfo({
 				<div className="rounded-2xl bg-white p-4">
 					<p className="text-xs uppercase tracking-wide text-slate-400">Location / Resource</p>
 					<p className="mt-1 text-sm font-semibold text-slate-900">
-						{ticket.location || ticket.resourceId || 'Not provided'}
+						{locationResourceText || 'Not provided'}
 					</p>
 				</div>
 				<div className="rounded-2xl bg-white p-4 sm:col-span-2">
@@ -290,6 +343,9 @@ export default function UserTicketInfo({
 					<p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-700">{ticket.description}</p>
 				</div>
 			</div>
+					</>
+				)
+			})()}
 
 			<TicketAttachments attachments={ticket.attachments} />
 

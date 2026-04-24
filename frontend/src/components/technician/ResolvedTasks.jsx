@@ -10,7 +10,6 @@ export default function ResolvedTasks({ session }) {
 	useEffect(() => {
 		if (!session) return
 		loadResolved()
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [session])
 
 	async function loadResolved() {
@@ -57,7 +56,16 @@ export default function ResolvedTasks({ session }) {
 						<div className="flex items-start justify-between">
 							<div>
 								<p className="text-sm font-semibold text-slate-900">{ticket.title}</p>
-								<p className="mt-1 text-xs text-slate-500">{ticket.location ?? (ticket.resourceId ? `Resource ${ticket.resourceId}` : '')}</p>
+								<div className="mt-2 flex flex-wrap gap-2 text-xs">
+									<span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">#{ticket.id}</span>
+									<span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700">{ticket.category ?? 'GENERAL'}</span>
+									<span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">Priority: {ticket.priority ?? '-'}</span>
+									<span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">{ticket.status ?? 'RESOLVED'}</span>
+								</div>
+								<p className="mt-2 text-xs text-slate-500">Location: {ticket.location ?? (ticket.resourceId ? `Resource ${ticket.resourceId}` : 'Not provided')}</p>
+								{ticket.description && (
+									<p className="mt-2 line-clamp-2 text-xs text-slate-600">{ticket.description}</p>
+								)}
 							</div>
 
 							<div className="ml-4 flex gap-2">
@@ -73,7 +81,57 @@ export default function ResolvedTasks({ session }) {
 
 						{selectedTicket && selectedTicket.id === ticket.id && (
 							<div className="mt-3 border-t pt-3">
+								<div className="mb-3 flex justify-end">
+									<button
+										type="button"
+										onClick={() => setSelectedTicket(null)}
+										className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+									>
+										Close details
+									</button>
+								</div>
+
+								<div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+									<p>
+										<span className="font-semibold text-slate-700">Ticket ID:</span> #{selectedTicket.id}
+									</p>
+									<p>
+										<span className="font-semibold text-slate-700">Created:</span> {selectedTicket.createdAt ?? '-'}
+									</p>
+									<p>
+										<span className="font-semibold text-slate-700">Category:</span> {selectedTicket.category ?? '-'}
+									</p>
+									<p>
+										<span className="font-semibold text-slate-700">Priority:</span> {selectedTicket.priority ?? '-'}
+									</p>
+									<p>
+										<span className="font-semibold text-slate-700">Contact:</span> {selectedTicket.preferredContactName ?? '-'}
+									</p>
+									<p>
+										<span className="font-semibold text-slate-700">Email:</span> {selectedTicket.preferredContactEmail ?? '-'}
+									</p>
+								</div>
+
 								<p className="text-sm text-slate-700">{selectedTicket.description}</p>
+
+								{Array.isArray(selectedTicket.attachments) && selectedTicket.attachments.length > 0 && (
+									<div className="mt-3">
+										<h3 className="text-sm font-medium text-slate-900">Attachments</h3>
+										<div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+											{selectedTicket.attachments.map((a) => (
+												<a
+													key={a.id}
+													href={a.url}
+													target="_blank"
+													rel="noreferrer"
+													className="block overflow-hidden rounded border border-slate-200 bg-white"
+												>
+													<img src={a.url} alt={`attachment-${a.id ?? 'file'}`} className="h-24 w-full object-cover" />
+												</a>
+											))}
+										</div>
+									</div>
+								)}
 
 								{selectedTicket.resolutionNotes && (
 									<div className="mt-3 rounded-md bg-white p-3 text-sm text-slate-700">

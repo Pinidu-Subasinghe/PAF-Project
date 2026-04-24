@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Swal from 'sweetalert2'
 import {
 	assignIncidentTicket,
 	getAdminUsers,
@@ -104,6 +105,23 @@ export default function AdminTicketManagement({ ticketId, onBack }) {
 
 	const handleAssign = async () => {
 		if (!ticket || !assignTechnicianId) {
+			return
+		}
+
+		const selectedTechnician = adminUsers.find((user) => String(user.id) === assignTechnicianId)
+		const confirmation = await Swal.fire({
+			title: 'Assign this ticket?',
+			text: selectedTechnician
+				? `This ticket will be assigned to ${selectedTechnician.fullName || selectedTechnician.email}.`
+				: 'This ticket will be assigned to the selected technician.',
+			icon: 'question',
+			showCancelButton: true,
+			confirmButtonText: 'Yes, assign',
+			cancelButtonText: 'Cancel',
+			confirmButtonColor: '#0f766e',
+		})
+
+		if (!confirmation.isConfirmed) {
 			return
 		}
 
