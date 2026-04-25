@@ -79,6 +79,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const [reminderBooking, setReminderBooking] = useState(null)
   const [reminderOffset, setReminderOffset] = useState('30')
   const [hoveredDay, setHoveredDay] = useState(null)
+  const [morePopoverDay, setMorePopoverDay] = useState(null)
   const hoverTimeoutRef = useRef(null)
 
   // Persist reminders to localStorage
@@ -956,13 +957,13 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
   const getStatusColors = (status) => {
     switch (status) {
       case 'PENDING':
-        return 'bg-amber-50 border-amber-200 text-amber-700'
+        return 'bg-amber-50/30 border-l-amber-500 text-amber-800'
       case 'APPROVED':
-        return 'bg-emerald-50 border-emerald-200 text-emerald-700'
+        return 'bg-emerald-50/30 border-l-emerald-500 text-emerald-800'
       case 'REJECTED':
-        return 'bg-rose-50 border-rose-200 text-rose-700'
+        return 'bg-rose-50/30 border-l-rose-500 text-rose-800'
       default:
-        return 'bg-slate-50 border-slate-200 text-slate-700'
+        return 'bg-slate-50/30 border-l-slate-400 text-slate-700'
     }
   }
 
@@ -1169,8 +1170,8 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       {viewMode === 'bookings' && (
         <>
           {isAllScope && (
-            <div className="mb-5 grid gap-4 lg:grid-cols-[1fr_auto]">
-              <div className="grid gap-3 sm:grid-cols-2">
+            <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="grid w-full gap-3 sm:grid-cols-2 lg:flex lg:items-center lg:gap-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                   <label htmlFor="statusFilter" className="text-sm font-medium text-slate-700">Status</label>
                   <select
@@ -1201,16 +1202,16 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                     <option value="EQUIPMENT">Equipment</option>
                   </select>
                 </div>
-              </div>
 
-              <input
-                id="resourceIdSearch"
-                type="text"
-                value={resourceIdSearch}
-                onChange={(event) => setResourceIdSearch(event.target.value)}
-                placeholder="Search by ID or name..."
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 placeholder:text-slate-400 lg:w-72"
-              />
+                <input
+                  id="resourceIdSearch"
+                  type="text"
+                  value={resourceIdSearch}
+                  onChange={(event) => setResourceIdSearch(event.target.value)}
+                  placeholder="Search by ID or name..."
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 placeholder:text-slate-400 lg:w-72"
+                />
+              </div>
             </div>
           )}
 
@@ -1276,86 +1277,40 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
 
       {/* CALENDAR VIEW - Only for User */}
       {!isAllScope && userViewTab === 'calendar' && (
-        <div className="space-y-4">
-          {/* Upcoming Reminders Panel */}
-          {(() => {
-            const upcomingReminders = reminders
-              .filter(r => new Date(r.date) >= new Date(new Date().toDateString()))
-              .sort((a, b) => new Date(a.date) - new Date(b.date))
-              .slice(0, 5)
+        <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
+          {/* Calendar Section - Left Side */}
+          <div className="flex-1 space-y-4">
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-sky-100 to-blue-50 p-4 shadow-sm shadow-sky-200/50">
+              <button
+                onClick={() => navigateMonth(-1)}
+                className="flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Prev
+              </button>
+              <h3 className="text-lg font-semibold text-slate-800">
+                {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </h3>
+              <button
+                onClick={() => navigateMonth(1)}
+                className="flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+              >
+                Next
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
 
-            if (upcomingReminders.length === 0) return null
-
-            return (
-              <div className="rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50 p-4 shadow-sm">
-                <div className="mb-3 flex items-center gap-2">
-                  <svg className="h-5 w-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  <h4 className="font-semibold text-violet-900">Upcoming Reminders</h4>
-                </div>
-                <div className="space-y-2">
-                  {upcomingReminders.map((reminder) => (
-                    <div
-                      key={reminder.id}
-                      className="flex items-center justify-between rounded-lg bg-white px-3 py-2 shadow-sm"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-slate-700">{reminder.resourceName}</span>
-                        <span className="text-xs text-slate-500">
-                          {reminder.date} • {reminder.startTime}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-violet-600 font-medium">{reminder.offsetLabel}</span>
-                        <button
-                          onClick={() => deleteReminder(reminder.id)}
-                          className="text-slate-400 hover:text-rose-500 transition"
-                          title="Delete reminder"
-                        >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          })()}
-
-          {/* Calendar Header */}
-          <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-sky-100 to-blue-50 p-4 shadow-sm shadow-sky-200/50">
-            <button
-              onClick={() => navigateMonth(-1)}
-              className="flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Prev
-            </button>
-            <h3 className="text-lg font-semibold text-slate-800">
-              {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </h3>
-            <button
-              onClick={() => navigateMonth(1)}
-              className="flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
-            >
-              Next
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Calendar Grid */}
-          <div className="rounded-2xl border border-sky-200/60 bg-white p-4 shadow-sm shadow-sky-100/50">
+            {/* Calendar Grid */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             {/* Weekday Headers */}
             <div className="mb-2 grid grid-cols-7 gap-1">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <div key={day} className="py-2 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                <div key={day} className="py-2 text-center text-xs font-medium text-slate-500 uppercase tracking-wide">
                   {day}
                 </div>
               ))}
@@ -1372,7 +1327,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                 <div className="grid grid-cols-7 gap-1">
                   {days.map((day, index) => {
                     if (day === null) {
-                      return <div key={`empty-${index}`} className="min-h-[100px] bg-slate-50/50" />
+                      return <div key={`empty-${index}`} className="min-h-[70px] bg-slate-50/30" />
                     }
 
                     const dateString = formatDate(year, month, day)
@@ -1382,16 +1337,18 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                     return (
                       <div
                         key={day}
-                        className={`min-h-[100px] border p-2 transition hover:bg-slate-50 ${
-                          isToday ? 'border-blue-300 bg-blue-50/30' : 'border-slate-100'
+                        className={`min-h-[70px] border p-2 transition hover:bg-slate-50 ${
+                          isToday 
+                            ? 'border-violet-500 bg-violet-50/40 shadow-lg shadow-violet-200/50' 
+                            : 'border-slate-100'
                         }`}
                       >
-                        <div className={`mb-1 text-right text-sm font-medium ${isToday ? 'text-blue-600' : 'text-slate-700'}`}>
+                        <div className={`mb-1 text-right text-sm font-medium ${isToday ? 'text-violet-700' : 'text-slate-600'}`}>
                           {day}
                         </div>
                         {/* Day cell with hover locking */}
                         <div
-                          className="relative min-h-[60px] cursor-pointer"
+                          className="relative min-h-[40px] cursor-pointer"
                           onMouseEnter={() => handleDayHover(`${year}-${month}-${day}`)}
                           onMouseLeave={handleDayLeave}
                         >
@@ -1400,7 +1357,7 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                             {dayBookings.slice(0, 2).map((booking) => (
                               <div
                                 key={booking.id}
-                                className={`w-full cursor-default overflow-hidden rounded border px-1.5 py-1 text-left text-xs ${getStatusColors(booking.status)}`}
+                                className={`w-full cursor-default overflow-hidden rounded-r border-l-4 border-t border-r border-b border-slate-200 bg-white px-2 py-1.5 text-left text-xs ${getStatusColors(booking.status)}`}
                               >
                                 <div className="truncate font-medium">{booking.resourceName}</div>
                                 <div className="text-[10px] opacity-75">
@@ -1409,7 +1366,10 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                               </div>
                             ))}
                             {dayBookings.length > 2 && (
-                              <div className="w-full rounded bg-slate-100 px-1.5 py-1 text-center text-xs font-medium text-slate-600">
+                              <div
+                                onClick={() => setMorePopoverDay(morePopoverDay === `${year}-${month}-${day}` ? null : `${year}-${month}-${day}`)}
+                                className="w-full cursor-pointer rounded bg-slate-100 px-1.5 py-1 text-center text-xs font-medium text-slate-600 hover:bg-slate-200 transition"
+                              >
                                 +{dayBookings.length - 2} more
                               </div>
                             )}
@@ -1427,12 +1387,51 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                                 </div>
                               )
                             })()}
+
+                          {/* "+1 more" Popover */}
+                          {dayBookings.length > 2 && morePopoverDay === `${year}-${month}-${day}` && (
+                            <div className="absolute bottom-full left-0 z-[9998] mb-2 w-full">
+                              <div
+                                className="backdrop-blur-md rounded-xl border border-slate-200/60 bg-white/90 shadow-xl p-3"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="mb-2 flex items-center justify-between">
+                                  <span className="text-xs font-semibold text-slate-700">All Bookings</span>
+                                  <button
+                                    onClick={() => setMorePopoverDay(null)}
+                                    className="text-slate-400 hover:text-slate-600 transition"
+                                  >
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+                                <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                                  {dayBookings.map((booking) => {
+                                    const statusBorderColor = booking.status === 'PENDING' ? 'border-l-amber-500' : booking.status === 'APPROVED' ? 'border-l-emerald-500' : 'border-l-rose-500'
+                                    const statusBgColor = booking.status === 'PENDING' ? 'bg-amber-50/30' : booking.status === 'APPROVED' ? 'bg-emerald-50/30' : 'bg-rose-50/30'
+                                    return (
+                                      <div
+                                        key={booking.id}
+                                        className={`rounded-r border-l-3 border-t border-r border-b border-slate-200 bg-white px-2 py-1.5 text-xs ${statusBorderColor} ${statusBgColor}`}
+                                      >
+                                        <div className="truncate font-medium text-slate-800">{booking.resourceName}</div>
+                                        <div className="text-[10px] text-slate-600">
+                                          {booking.startTime} - {booking.endTime}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           </div>
 
                           {/* Hover overlay - appears fixed above the cell, shows all bookings */}
                           {dayBookings.length > 0 && hoveredDay === `${year}-${month}-${day}` && (
                             <div
-                              className="pointer-events-auto absolute bottom-full left-1/4 z-50 mb-3 flex w-[340px] -translate-x-1/2 transform flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-2xl transition-all duration-300"
+                              className="pointer-events-auto absolute bottom-full left-4/4 z-[9999] mb-3 flex w-[340px] -translate-x-1/2 transform flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-2xl transition-all duration-300"
                               onMouseEnter={handleOverlayEnter}
                               onMouseLeave={handleOverlayLeave}
                             >
@@ -1441,16 +1440,18 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                               {/* Arrow pointing down */}
                               <div className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-slate-200 bg-white" />
                               {/* All bookings in this day */}
-                              <div className="relative z-10 max-h-[180px] overflow-y-auto space-y-3">
+                              <div className="relative z-10 max-h-[350px] overflow-y-auto space-y-3">
                                 {dayBookings.map((booking, idx) => {
-                                  const statusGlow = booking.status === 'PENDING' ? 'shadow-amber-300' : booking.status === 'APPROVED' ? 'shadow-emerald-200' : 'shadow-rose-200'
+                                  const statusBorderColor = booking.status === 'PENDING' ? 'border-l-amber-500' : booking.status === 'APPROVED' ? 'border-l-emerald-500' : 'border-l-rose-500'
+                                  const statusBgColor = booking.status === 'PENDING' ? 'bg-amber-50/30' : booking.status === 'APPROVED' ? 'bg-emerald-50/30' : 'bg-rose-50/30'
+                                  const statusTextColor = booking.status === 'PENDING' ? 'text-amber-800' : booking.status === 'APPROVED' ? 'text-emerald-800' : 'text-rose-800'
                                   return (
                                     <div
                                       key={booking.id}
-                                      className={`rounded-lg border-2 px-3 py-2 text-sm ${getStatusColors(booking.status)} ${statusGlow} shadow-sm`}
+                                      className={`rounded-r border-l-4 border-t border-r border-b border-slate-200 bg-white px-4 py-3 shadow-sm ${statusBorderColor} ${statusBgColor} ${statusTextColor}`}
                                     >
                                       <div className="flex items-center justify-between gap-3">
-                                        <span className="font-semibold text-sm">{booking.resourceName}</span>
+                                        <span className="font-semibold text-sm text-slate-800">{booking.resourceName}</span>
                                         <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${
                                           booking.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
                                           booking.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
@@ -1459,11 +1460,11 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                                           {booking.status}
                                         </span>
                                       </div>
-                                      <div className="mt-1.5 text-sm opacity-90 font-medium">
+                                      <div className="mt-1.5 text-sm opacity-90 font-medium text-slate-700">
                                         {booking.startTime} - {booking.endTime}
                                       </div>
                                       <div className="flex items-center justify-between">
-                                        <span className="text-xs opacity-60">{booking.resourceType}</span>
+                                        <span className="text-xs text-slate-500">{booking.resourceType}</span>
                                         {booking.status === 'APPROVED' && (
                                           <button
                                             onClick={(e) => {
@@ -1502,19 +1503,87 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
           )}
 
           {/* Legend */}
-          <div className="flex flex-wrap items-center gap-4 rounded-xl bg-slate-50 p-3 text-xs">
+          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-3 text-xs">
             <span className="font-medium text-slate-600">Status:</span>
             <div className="flex items-center gap-1.5">
-              <div className="h-3 w-3 rounded-full bg-amber-400" />
+              <div className="h-3 w-1 rounded-sm bg-amber-500" />
               <span className="text-slate-600">Pending</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="h-3 w-3 rounded-full bg-emerald-400" />
+              <div className="h-3 w-1 rounded-sm bg-emerald-500" />
               <span className="text-slate-600">Approved</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="h-3 w-3 rounded-full bg-rose-400" />
+              <div className="h-3 w-1 rounded-sm bg-rose-500" />
               <span className="text-slate-600">Rejected</span>
+            </div>
+          </div>
+          </div>
+
+          {/* Reminders Section - Right Side */}
+          <div className="w-full lg:w-80 space-y-4">
+            <div className="min-h-[200px] rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <svg className="h-5 w-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <h4 className="font-semibold text-slate-800">Upcoming Reminders</h4>
+              </div>
+              {/* Nested card for reminders content */}
+              <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+                {(() => {
+                  const upcomingReminders = reminders
+                    .filter(r => new Date(r.date) >= new Date(new Date().toDateString()))
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .slice(0, 5)
+
+                  if (upcomingReminders.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <svg className="mb-2 h-8 w-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-sm font-medium text-slate-400">All caught up!</p>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className="space-y-2">
+                      {upcomingReminders.map((reminder) => (
+                        <div
+                          key={reminder.id}
+                          className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2.5 shadow-sm transition hover:shadow-md"
+                        >
+                          <svg className="h-4 w-4 flex-shrink-0 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                          </svg>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-slate-700 text-sm truncate">{reminder.resourceName}</div>
+                            <div className="text-xs text-slate-500">
+                              {reminder.date} • {reminder.startTime}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-600">
+                              {reminder.offsetLabel}
+                            </span>
+                            <button
+                              onClick={() => deleteReminder(reminder.id)}
+                              className="text-slate-400 hover:text-rose-500 transition"
+                              title="Delete reminder"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
+              </div>
             </div>
           </div>
         </div>
@@ -1917,14 +1986,14 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
         <div className="space-y-6">
           {/* Analytics Filters */}
           <div className="flex flex-col gap-4 rounded-xl bg-slate-50 p-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-3">
                 <label htmlFor="analyticsStatusFilter" className="text-sm font-medium text-slate-700">Status</label>
                 <select
                   id="analyticsStatusFilter"
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 sm:w-auto"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
                 >
                   <option value="">All</option>
                   <option value="PENDING">Pending</option>
@@ -1933,13 +2002,13 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <div className="flex items-center gap-3">
                 <label htmlFor="analyticsResourceTypeFilter" className="text-sm font-medium text-slate-700">Resource Type</label>
                 <select
                   id="analyticsResourceTypeFilter"
                   value={resourceTypeFilter}
                   onChange={(event) => setResourceTypeFilter(event.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 sm:w-auto"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
                 >
                   <option value="">All</option>
                   <option value="LAB">Lab</option>
@@ -1949,37 +2018,36 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <div className="flex items-center gap-3">
                 <label className="text-sm font-medium text-slate-700">Date Range</label>
-                <input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 sm:w-auto"
-                />
-                <span className="text-slate-500">to</span>
-                <input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200 sm:w-auto"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  />
+                  <span className="text-slate-400 font-medium">→</span>
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Download Report Dropdown */}
-            <div className="relative w-full lg:w-auto" ref={downloadMenuRef}>
+            <div className="relative w-full lg:w-auto lg:ml-4" ref={downloadMenuRef}>
               <button
                 onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white transition hover:shadow-lg hover:shadow-violet-500/30 lg:w-auto"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 hover:shadow-lg lg:w-auto"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 Download Report
-                <svg className={`w-4 h-4 transition-transform ${showDownloadMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
               </button>
 
               {showDownloadMenu && (
