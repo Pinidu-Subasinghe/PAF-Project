@@ -88,10 +88,44 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
 
   // Request notification permission on mount
   useEffect(() => {
-    if ('Notification' in window && Notification.permission !== 'granted') {
-      Notification.requestPermission()
+    const requestPermission = async () => {
+      if ('Notification' in window) {
+        if (Notification.permission === 'default') {
+          const permission = await Notification.requestPermission()
+          console.log('Notification permission:', permission)
+        } else {
+          console.log('Notification permission already:', Notification.permission)
+        }
+      } else {
+        console.log('Notifications not supported')
+      }
     }
+    requestPermission()
   }, [])
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    try {
+      // Create a simple beep sound using Web Audio API
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      oscillator.frequency.value = 800 // 800Hz beep
+      oscillator.type = 'sine'
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.5)
+    } catch (error) {
+      console.log('Sound play failed:', error)
+    }
+  }
 
   // Calculate reminder trigger time
   const getReminderTriggerTime = (reminder) => {
@@ -104,26 +138,46 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       '1440': 24 * 60 * 60 * 1000
     }
 
-    return new Date(bookingDateTime.getTime() - (offsets[reminder.offset] || 0))
+    const triggerTime = new Date(bookingDateTime.getTime() - (offsets[reminder.offset] || 0))
+    console.log('Reminder trigger time for', reminder.resourceName, ':', triggerTime, 'Current time:', new Date())
+    return triggerTime
   }
 
   // Check reminders every 30 seconds and trigger notifications
   useEffect(() => {
+    console.log('Setting up reminder check interval, total reminders:', reminders.length)
+    
     const interval = setInterval(() => {
       const now = new Date()
+      console.log('Checking reminders at:', now)
 
       reminders.forEach((reminder) => {
         const triggerTime = getReminderTriggerTime(reminder)
 
         // Prevent duplicate firing - only trigger if not already triggered
         if (!reminder.triggered && now >= triggerTime) {
+          console.log('TRIGGERING REMINDER:', reminder.resourceName)
+          
+          // Play sound
+          playNotificationSound()
+          
           // Show browser notification
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Booking Reminder', {
+            const notification = new Notification('🔔 Booking Reminder', {
               body: `${reminder.resourceName} at ${reminder.startTime} on ${reminder.date}`,
               icon: '/favicon.ico',
-              tag: `booking-${reminder.id}`
+              tag: `booking-${reminder.id}`,
+              requireInteraction: true
             })
+            
+            // Auto-close notification after 10 seconds
+            setTimeout(() => {
+              notification.close()
+            }, 10000)
+          } else {
+            console.log('Notifications not granted or not supported')
+            // Fallback: show alert
+            alert(`🔔 Booking Reminder: ${reminder.resourceName} at ${reminder.startTime}`)
           }
 
           // Mark as triggered
@@ -136,7 +190,10 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       })
     }, 30000) // Check every 30 seconds
 
-    return () => clearInterval(interval)
+    return () => {
+      console.log('Clearing reminder interval')
+      clearInterval(interval)
+    }
   }, [reminders])
 
   const [isLoading, setIsLoading] = useState(true)
