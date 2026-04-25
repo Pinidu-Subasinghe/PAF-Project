@@ -329,9 +329,9 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       closeBookingModal()
       await Swal.fire({
         title: 'Approved',
-        text: 'Booking was approved successfully.',
+        text: 'Booking was approved successfully. User notified via email.',
         icon: 'success',
-        timer: 1500,
+        timer: 2000,
         showConfirmButton: false,
       })
     } catch (error) {
@@ -383,9 +383,9 @@ export default function BookingList({ scope = 'my', onRaiseTicket }) {
       closeBookingModal()
       await Swal.fire({
         title: 'Rejected',
-        text: 'Booking was rejected successfully.',
+        text: 'Booking was rejected successfully. User notified via email.',
         icon: 'success',
-        timer: 1500,
+        timer: 2000,
         showConfirmButton: false,
       })
     } catch (error) {
