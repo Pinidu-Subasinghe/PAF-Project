@@ -162,7 +162,7 @@ export default function AdminDashboard() {
   return (
     <DashboardShell
       title="Admin Dashboard"
-      subtitle="Monitor campus operations and administrative tasks."
+      // subtitle="Monitor campus operations and administrative tasks."
       items={navItems}
       activeItemId={activeItemId}
       onSelect={handleSelect}
