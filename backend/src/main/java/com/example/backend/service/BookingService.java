@@ -20,6 +20,7 @@ import com.example.backend.repository.BookingRepository;
 import com.example.backend.repository.ResourceRepository;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.service.NotificationService;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -216,6 +217,7 @@ public class BookingService {
         return toResponse(saved);
     }
 
+    @Async
     private void sendBookingStatusEmail(Booking booking, String status) {
         try {
             // Get user by ID
