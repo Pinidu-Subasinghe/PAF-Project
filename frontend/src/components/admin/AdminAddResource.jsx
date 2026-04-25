@@ -142,7 +142,7 @@ export default function AdminAddResource({ onCreated } = {}) {
         </div>
       )}
 
-      <form className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-6 md:grid-cols-2" onSubmit={handleSubmit}>
+      <form className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 lg:p-8 md:grid-cols-2" onSubmit={handleSubmit}>
         <label className="grid gap-2 text-sm font-medium text-slate-700 md:col-span-2">
           Resource Name
           <input
@@ -150,7 +150,7 @@ export default function AdminAddResource({ onCreated } = {}) {
             type="text"
             value={formState.name}
             onChange={(event) => updateFormState((current) => ({ ...current, name: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
             placeholder="Engineering Lab A"
           />
           {fieldErrors.name && <span className="text-xs text-rose-600">{fieldErrors.name}</span>}
@@ -169,7 +169,7 @@ export default function AdminAddResource({ onCreated } = {}) {
                 equipment: newType === 'EQUIPMENT' ? (current.equipment ?? initialFormState.equipment) : initialFormState.equipment,
               }))
             }}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+              className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           >
             {typeOptions.map((option) => (
               <option key={option} value={option}>{formatEnumLabel(option)}</option>
@@ -187,7 +187,7 @@ export default function AdminAddResource({ onCreated } = {}) {
             value={formState.capacity}
             onChange={(event) => updateFormState((current) => ({ ...current, capacity: event.target.value }))}
             disabled={formState.type === 'EQUIPMENT'}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
           {fieldErrors.capacity && <span className="text-xs text-rose-600">{fieldErrors.capacity}</span>}
         </label>
@@ -199,7 +199,7 @@ export default function AdminAddResource({ onCreated } = {}) {
             type="text"
             value={formState.location}
             onChange={(event) => updateFormState((current) => ({ ...current, location: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
             placeholder="Main Building, Floor 2"
           />
           {fieldErrors.location && <span className="text-xs text-rose-600">{fieldErrors.location}</span>}
@@ -214,7 +214,7 @@ export default function AdminAddResource({ onCreated } = {}) {
             min="08:00"
             max="20:00"
             onChange={(event) => updateFormState((current) => ({ ...current, availableFrom: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
           {fieldErrors.availableFrom && <span className="text-xs text-rose-600">{fieldErrors.availableFrom}</span>}
         </label>
@@ -228,7 +228,7 @@ export default function AdminAddResource({ onCreated } = {}) {
             min="08:00"
             max="20:00"
             onChange={(event) => updateFormState((current) => ({ ...current, availableTo: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           />
           {fieldErrors.availableTo && <span className="text-xs text-rose-600">{fieldErrors.availableTo}</span>}
         </label>
@@ -238,7 +238,7 @@ export default function AdminAddResource({ onCreated } = {}) {
           <select
             value={formState.status}
             onChange={(event) => updateFormState((current) => ({ ...current, status: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>{formatEnumLabel(option)}</option>
@@ -253,7 +253,7 @@ export default function AdminAddResource({ onCreated } = {}) {
             rows="3"
             value={formState.description}
             onChange={(event) => updateFormState((current) => ({ ...current, description: event.target.value }))}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
             placeholder="Optional details"
           />
           {fieldErrors.description && <span className="text-xs text-rose-600">{fieldErrors.description}</span>}
@@ -271,7 +271,7 @@ export default function AdminAddResource({ onCreated } = {}) {
                 validateAndSetErrors(formState, selectedCover, extraImages)
               }
             }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
           />
           {fieldErrors.coverImage && <span className="text-xs text-rose-600">{fieldErrors.coverImage}</span>}
         </label>
@@ -283,7 +283,7 @@ export default function AdminAddResource({ onCreated } = {}) {
             accept=".jpg,.jpeg,.png,image/jpeg,image/png"
             multiple
             onChange={handleExtraImagesChange}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+            className="w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
           />
           {fieldErrors.extraImages && <span className="text-xs text-rose-600">{fieldErrors.extraImages}</span>}
           {!!extraImages.length && (
@@ -294,15 +294,15 @@ export default function AdminAddResource({ onCreated } = {}) {
         </label>
 
         {formState.type === 'EQUIPMENT' && (
-          <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
             <h3 className="text-base font-semibold text-slate-900">Equipment Details</h3>
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <label className="grid gap-2 text-sm font-medium text-slate-700">
                 Category
                 <select
                   value={formState.equipment.category}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, category: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 >
                   {equipmentCategoryOptions.map((opt) => (
                     <option key={opt} value={opt}>{formatEnumLabel(opt)}</option>
@@ -316,7 +316,7 @@ export default function AdminAddResource({ onCreated } = {}) {
                   type="text"
                   value={formState.equipment.brand}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, brand: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
               </label>
 
@@ -326,7 +326,7 @@ export default function AdminAddResource({ onCreated } = {}) {
                   type="text"
                   value={formState.equipment.model}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, model: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
               </label>
 
@@ -336,7 +336,7 @@ export default function AdminAddResource({ onCreated } = {}) {
                   type="text"
                   value={formState.equipment.serialNumber}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, serialNumber: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
               </label>
 
@@ -346,35 +346,35 @@ export default function AdminAddResource({ onCreated } = {}) {
                   type="date"
                   value={formState.equipment.purchaseDate || ''}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, purchaseDate: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
               </label>
 
-              <label className="grid gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+              <label className="grid gap-2 text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-3">
                 Notes
                 <textarea
                   rows="2"
                   value={formState.equipment.notes}
                   onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, notes: e.target.value } }))}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
                 />
               </label>
             </div>
           </div>
         )}
 
-        <div className="md:col-span-2 flex flex-wrap gap-3">
+        <div className="md:col-span-2 flex flex-col gap-3 sm:flex-row">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {isSubmitting ? 'Saving...' : 'Create Resource'}
           </button>
           <button
             type="button"
             onClick={resetForm}
-            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-500"
+            className="w-full rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-500 sm:w-auto"
           >
             Reset
           </button>

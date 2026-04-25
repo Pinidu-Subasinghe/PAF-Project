@@ -1,15 +1,20 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.request.NotificationPreferencesUpdateRequest;
+import com.example.backend.dto.response.NotificationPreferencesResponse;
 import com.example.backend.dto.response.NotificationResponse;
 import com.example.backend.exception.UserNotFoundException;
 import com.example.backend.service.NotificationService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -31,6 +36,12 @@ public class NotificationController {
         return ResponseEntity.ok(new com.example.backend.dto.response.NotificationListResponse(list, total));
     }
 
+    @GetMapping("/me/all")
+    public ResponseEntity<List<NotificationResponse>> getAllMyNotifications(Authentication authentication) {
+        String email = requireEmail(authentication);
+        return ResponseEntity.ok(notificationService.listAllByUserEmail(email));
+    }
+
     @PatchMapping("/{notificationId}/read")
     public ResponseEntity<NotificationResponse> markAsRead(
             @PathVariable Long notificationId,
@@ -38,6 +49,21 @@ public class NotificationController {
     ) {
         NotificationResponse response = notificationService.markAsRead(notificationId, requireEmail(authentication));
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/preferences/me")
+    public ResponseEntity<NotificationPreferencesResponse> getMyNotificationPreferences(Authentication authentication) {
+        String email = requireEmail(authentication);
+        return ResponseEntity.ok(notificationService.getNotificationPreferencesByEmail(email));
+    }
+
+    @PutMapping("/preferences/me")
+    public ResponseEntity<NotificationPreferencesResponse> updateMyNotificationPreferences(
+            @Valid @RequestBody NotificationPreferencesUpdateRequest request,
+            Authentication authentication
+    ) {
+        String email = requireEmail(authentication);
+        return ResponseEntity.ok(notificationService.updateNotificationPreferencesByEmail(email, request));
     }
 
     private String requireEmail(Authentication authentication) {

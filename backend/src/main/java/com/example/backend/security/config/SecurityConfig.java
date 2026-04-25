@@ -51,19 +51,30 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
+                    
                     // public auth endpoints
                     .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/register/verify-otp", "/api/v1/auth/login").permitAll()
+
                     // resource modification endpoints require ADMIN role (defense-in-depth)
                     .requestMatchers(HttpMethod.POST, "/api/v1/resources").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.PUT, "/api/v1/resources/**").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.DELETE, "/api/v1/resources/**").hasRole("ADMIN")
+
                     // uploads for resources should also be admin-only
                     .requestMatchers(HttpMethod.POST, "/api/v1/uploads/resources/**").hasRole("ADMIN")
+
                     // booking endpoints: only users can create bookings
                     .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("USER")
+                    .requestMatchers(HttpMethod.GET, "/api/bookings/my").hasRole("USER")
+
                     // admin-only booking management (approve/reject, list all)
                     .requestMatchers(HttpMethod.PUT, "/api/bookings/*/approve", "/api/bookings/*/reject").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/bookings/*/clear").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.GET, "/api/bookings").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/bookings/all").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/bookings/*").hasRole("USER")
+                    .requestMatchers(HttpMethod.DELETE, "/api/bookings/*").hasAnyRole("USER", "ADMIN")
+
                     // incident ticket endpoints
                     .requestMatchers(HttpMethod.POST, "/api/v1/tickets").hasAnyRole("USER", "ADMIN")
                     .requestMatchers(HttpMethod.GET, "/api/v1/tickets/my").authenticated()
@@ -77,6 +88,7 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/api/v1/tickets/*/comments").authenticated()
                     .requestMatchers(HttpMethod.PUT, "/api/v1/tickets/comments/*").authenticated()
                     .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/comments/*").authenticated()
+
                     // public resource reads
                     .requestMatchers(HttpMethod.GET, "/api/v1/resources", "/api/v1/resources/**").permitAll()
                     .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
