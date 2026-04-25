@@ -26,8 +26,8 @@ const equipmentCategoryOptions = ['PROJECTOR', 'SMART_BOARD', 'SPEAKER', 'MICROP
 
 export default function FiltersPanel({ filters, setFilters }) {
   return (
-    <div className="sticky top-24">
-      <div className="space-y-4">
+    <div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Type
           <select
