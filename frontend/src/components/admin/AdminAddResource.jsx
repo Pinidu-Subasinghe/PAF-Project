@@ -38,6 +38,7 @@ export default function AdminAddResource({ onCreated } = {}) {
   const [formState, setFormState] = useState(initialFormState)
   const [coverImage, setCoverImage] = useState(null)
   const [extraImages, setExtraImages] = useState([])
+  const [isEquipmentDialogOpen, setIsEquipmentDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
@@ -49,6 +50,16 @@ export default function AdminAddResource({ onCreated } = {}) {
       coverImage: nextCoverImage,
       extraImages: nextExtraImages,
     })
+
+    const normalizedName = (nextFormState?.name || '').trim()
+    if (!normalizedName) {
+      errors.name = 'Resource name is required.'
+    } else if (normalizedName.length > 20) {
+      errors.name = 'Resource name must be maximum 20 characters.'
+    } else {
+      delete errors.name
+    }
+
     setFieldErrors(errors)
     return errors
   }
@@ -67,6 +78,7 @@ export default function AdminAddResource({ onCreated } = {}) {
     setFormState(initialFormState)
     setCoverImage(null)
     setExtraImages([])
+    setIsEquipmentDialogOpen(false)
     setHasTriedSubmit(false)
     setFieldErrors({})
     setErrorMessage('')
@@ -146,13 +158,14 @@ export default function AdminAddResource({ onCreated } = {}) {
         <label className="grid gap-2 text-sm font-medium text-slate-700 md:col-span-2">
           Resource Name
           <input
-            required
             type="text"
             value={formState.name}
             onChange={(event) => updateFormState((current) => ({ ...current, name: event.target.value }))}
+            maxLength={20}
             className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
             placeholder="Engineering Lab A"
           />
+          <span className="text-[11px] text-slate-500">{formState.name.length}/20 characters</span>
           {fieldErrors.name && <span className="text-xs text-rose-600">{fieldErrors.name}</span>}
         </label>
 
@@ -168,6 +181,7 @@ export default function AdminAddResource({ onCreated } = {}) {
                 capacity: newType === 'EQUIPMENT' ? '1' : current.capacity,
                 equipment: newType === 'EQUIPMENT' ? (current.equipment ?? initialFormState.equipment) : initialFormState.equipment,
               }))
+              setIsEquipmentDialogOpen(newType === 'EQUIPMENT')
             }}
               className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
           >
@@ -181,7 +195,7 @@ export default function AdminAddResource({ onCreated } = {}) {
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Capacity
           <input
-            required
+            // required
             min="1"
             type="number"
             value={formState.capacity}
@@ -195,7 +209,7 @@ export default function AdminAddResource({ onCreated } = {}) {
         <label className="grid gap-2 text-sm font-medium text-slate-700 md:col-span-2">
           Location
           <input
-            required
+            // required
             type="text"
             value={formState.location}
             onChange={(event) => updateFormState((current) => ({ ...current, location: event.target.value }))}
@@ -208,7 +222,7 @@ export default function AdminAddResource({ onCreated } = {}) {
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Available From
           <input
-            required
+            // required
             type="time"
             value={formState.availableFrom}
             min="08:00"
@@ -222,7 +236,7 @@ export default function AdminAddResource({ onCreated } = {}) {
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Available To
           <input
-            required
+            // required
             type="time"
             value={formState.availableTo}
             min="08:00"
@@ -294,71 +308,18 @@ export default function AdminAddResource({ onCreated } = {}) {
         </label>
 
         {formState.type === 'EQUIPMENT' && (
-          <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-            <h3 className="text-base font-semibold text-slate-900">Equipment Details</h3>
-            <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Category
-                <select
-                  value={formState.equipment.category}
-                  onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, category: e.target.value } }))}
-                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                >
-                  {equipmentCategoryOptions.map((opt) => (
-                    <option key={opt} value={opt}>{formatEnumLabel(opt)}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Brand
-                <input
-                  type="text"
-                  value={formState.equipment.brand}
-                  onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, brand: e.target.value } }))}
-                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Model
-                <input
-                  type="text"
-                  value={formState.equipment.model}
-                  onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, model: e.target.value } }))}
-                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Serial #
-                <input
-                  type="text"
-                  value={formState.equipment.serialNumber}
-                  onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, serialNumber: e.target.value } }))}
-                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Purchase Date
-                <input
-                  type="date"
-                  value={formState.equipment.purchaseDate || ''}
-                  onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, purchaseDate: e.target.value } }))}
-                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-3">
-                Notes
-                <textarea
-                  rows="2"
-                  value={formState.equipment.notes}
-                  onChange={(e) => setFormState((current) => ({ ...current, equipment: { ...current.equipment, notes: e.target.value } }))}
-                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                />
-              </label>
+          <div className="md:col-span-2 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50 p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-medium text-slate-700">
+                Equipment details are managed in a popup dialog.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsEquipmentDialogOpen(true)}
+                className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+              >
+                Open Equipment Details
+              </button>
             </div>
           </div>
         )}
@@ -380,6 +341,101 @@ export default function AdminAddResource({ onCreated } = {}) {
           </button>
         </div>
       </form>
+
+      {formState.type === 'EQUIPMENT' && isEquipmentDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4">
+          <div className="w-full max-w-4xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Equipment Details</h3>
+                <p className="text-xs text-slate-500">Update technical metadata for this equipment resource.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEquipmentDialogOpen(false)}
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-800"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6 sm:py-6 lg:grid-cols-3">
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                Category
+                <select
+                  value={formState.equipment.category}
+                  onChange={(e) => updateFormState((current) => ({ ...current, equipment: { ...current.equipment, category: e.target.value } }))}
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                >
+                  {equipmentCategoryOptions.map((opt) => (
+                    <option key={opt} value={opt}>{formatEnumLabel(opt)}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                Brand
+                <input
+                  type="text"
+                  value={formState.equipment.brand}
+                  onChange={(e) => updateFormState((current) => ({ ...current, equipment: { ...current.equipment, brand: e.target.value } }))}
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                Model
+                <input
+                  type="text"
+                  value={formState.equipment.model}
+                  onChange={(e) => updateFormState((current) => ({ ...current, equipment: { ...current.equipment, model: e.target.value } }))}
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                Serial #
+                <input
+                  type="text"
+                  value={formState.equipment.serialNumber}
+                  onChange={(e) => updateFormState((current) => ({ ...current, equipment: { ...current.equipment, serialNumber: e.target.value } }))}
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                Purchase Date
+                <input
+                  type="date"
+                  value={formState.equipment.purchaseDate || ''}
+                  onChange={(e) => updateFormState((current) => ({ ...current, equipment: { ...current.equipment, purchaseDate: e.target.value } }))}
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-3">
+                Notes
+                <textarea
+                  rows="3"
+                  value={formState.equipment.notes}
+                  onChange={(e) => updateFormState((current) => ({ ...current, equipment: { ...current.equipment, notes: e.target.value } }))}
+                  className="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+
+            <div className="flex justify-end border-t border-slate-200 px-5 py-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setIsEquipmentDialogOpen(false)}
+                className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Save Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

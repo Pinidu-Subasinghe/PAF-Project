@@ -146,14 +146,12 @@ export default function ResourcesPage() {
           </p>
         </section>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-4">
-          <aside className="lg:col-span-1">
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
-              <FiltersPanel filters={filters} setFilters={setFilters} />
-            </div>
-          </aside>
+        <section className="mt-8 space-y-6">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5">
+            <FiltersPanel filters={filters} setFilters={setFilters} />
+          </div>
 
-          <div className="lg:col-span-3">
+          <div>
             {isLoading && (
               <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600">
                 Loading resources...
