@@ -25,6 +25,8 @@ export default function AdminResourceManagement({ onSelectResource, onViewAnalyt
   const [resources, setResources] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedType, setSelectedType] = useState('ALL')
 
   const loadResources = async () => {
     setIsLoading(true)
@@ -43,6 +45,20 @@ export default function AdminResourceManagement({ onSelectResource, onViewAnalyt
   useEffect(() => {
     loadResources()
   }, [])
+
+  // Get unique resource types
+  const resourceTypes = ['ALL', ...new Set(resources.map((r) => r.type))]
+
+  // Filter resources based on search and type
+  const filteredResources = resources.filter((resource) => {
+    const matchesSearch = 
+      resource.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      resource.location.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesType = selectedType === 'ALL' || resource.type === selectedType
+    
+    return matchesSearch && matchesType
+  })
 
   const handleCardClick = (resourceId) => {
     if (typeof onSelectResource === 'function') {
@@ -70,6 +86,42 @@ export default function AdminResourceManagement({ onSelectResource, onViewAnalyt
         </button>
       </div>
 
+      {/* Search and Filter Bar */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">Search and filter</h3>
+          <p className="mt-1 text-xs text-slate-500">Narrow down resources by name, location, or category.</p>
+        </div>
+        
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search by resource name or location"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10"
+            />
+          </div>
+          
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 transition focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10 cursor-pointer sm:min-w-[180px]"
+          >
+            {resourceTypes.map((type) => (
+              <option key={type} value={type}>
+                {type === 'ALL' ? 'All Types' : formatEnumLabel(type)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <p className="text-sm font-semibold text-teal-700">
+          Showing {filteredResources.length} resource{filteredResources.length !== 1 ? 's' : ''}
+        </p>
+      </div>
+
       {isLoading && (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-600">
           Loading resources...
@@ -82,71 +134,75 @@ export default function AdminResourceManagement({ onSelectResource, onViewAnalyt
         </div>
       )}
 
-      {!isLoading && !errorMessage && resources.length === 0 && (
+      {!isLoading && !errorMessage && filteredResources.length === 0 && (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-600">
           No resources found.
         </div>
       )}
 
-      {!isLoading && resources.length > 0 && (
+      {!isLoading && filteredResources.length > 0 && (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {resources.map((resource) => {
+          {filteredResources.map((resource) => {
             const imageUrl = getCardImageUrl(resource)
 
             return (
             <article 
               key={resource.id} 
               onClick={() => handleCardClick(resource.id)}
-              className="cursor-pointer overflow-hidden transition-all hover:-translate-y-1 hover:shadow-md hover:border-teal-200 rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 flex flex-col h-full"
+              className="cursor-pointer overflow-hidden transition-all hover:shadow-lg rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 flex flex-col h-full"
             >
               {imageUrl && (
-                <img
-                  src={imageUrl}
-                  alt={`${resource.name} cover`}
-                  className="h-40 w-full object-cover"
-                />
+                <div className="relative h-48 w-full overflow-hidden bg-slate-100">
+                  <img
+                    src={imageUrl}
+                    alt={`${resource.name} cover`}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
               )}
 
-              <div className="p-5">
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
+              <div className="p-5 flex flex-col flex-1">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
                     {formatEnumLabel(resource.type)}
                   </p>
-                  <h3 className="mt-1 text-lg font-bold text-slate-900 line-clamp-1">{resource.name}</h3>
-                </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                  resource.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                }`}>
-                  {formatEnumLabel(resource.status)}
-                </span>
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex items-center text-sm text-slate-600 mb-1">
-                  <svg className="mr-1.5 h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                  </svg>
-                  <span className="truncate">{resource.location}</span>
-                </div>
-                <div className="flex items-center text-sm text-slate-600 mb-1">
-                  <svg className="mr-1.5 h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                  </svg>
-                  Capacity: {resource.capacity} people
-                </div>
-                <div className="flex items-center text-sm text-slate-600">
-                  <svg className="mr-1.5 h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Available: {resource.availableFrom} - {resource.availableTo}
+                  <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                    resource.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'
+                  }`}>
+                    {formatEnumLabel(resource.status)}
+                  </span>
                 </div>
 
-                <p className="mt-3 text-sm leading-relaxed text-slate-600 line-clamp-2">
-                  {resource.description?.trim() || 'Resource details are being maintained by the administration team.'}
-                </p>
-              </div>
+                <h3 className="mb-4 text-lg font-bold text-slate-900">{resource.name}</h3>
+
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center text-sm text-slate-600">
+                    <svg className="mr-2 h-4 w-4 shrink-0 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+                    </svg>
+                    <span className="text-slate-700">Available: {resource.availableFrom} - {resource.availableTo}</span>
+                  </div>
+
+                  <div className="flex items-center text-sm text-slate-600">
+                    <svg className="mr-2 h-4 w-4 shrink-0 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                    </svg>
+                    <span className="text-slate-700">Capacity: {resource.capacity} people</span>
+                  </div>
+
+                  <div className="flex items-start text-sm text-slate-600">
+                    <svg className="mr-2 mt-0.5 h-4 w-4 shrink-0 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-9h11v2h-11z" />
+                    </svg>
+                    <span className="text-slate-700">{resource.location}</span>
+                  </div>
+                </div>
+
+                <div className="flex-1">
+                  <p className="text-sm leading-relaxed text-slate-600">
+                    {resource.description?.trim() || 'Resource details are being maintained by the administration team.'}
+                  </p>
+                </div>
               </div>
             </article>
           )})}
