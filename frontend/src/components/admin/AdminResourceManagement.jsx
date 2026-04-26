@@ -75,7 +75,7 @@ export default function AdminResourceManagement({ onSelectResource, onViewAnalyt
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Manage Resources</h2>
-          <p className="mt-1 text-sm text-slate-500">Review, update, and monitor all campus facilities and equipment in one place.</p>
+          {/* <p className="mt-1 text-sm text-slate-500">Review, update, and monitor all campus facilities and equipment in one place.</p> */}
         </div>
         <button
           type="button"
@@ -146,17 +146,16 @@ export default function AdminResourceManagement({ onSelectResource, onViewAnalyt
             const imageUrl = getCardImageUrl(resource)
 
             return (
-            <article 
-              key={resource.id} 
-              onClick={() => handleCardClick(resource.id)}
-              className="cursor-pointer overflow-hidden transition-all hover:shadow-lg rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 flex flex-col h-full"
+            <article
+              key={resource.id}
+              className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 flex flex-col h-full transition-all duration-300 hover:-translate-y-1 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-500/10"
             >
               {imageUrl && (
                 <div className="relative h-48 w-full overflow-hidden bg-slate-100">
                   <img
                     src={imageUrl}
                     alt={`${resource.name} cover`}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
               )}
@@ -198,11 +197,13 @@ export default function AdminResourceManagement({ onSelectResource, onViewAnalyt
                   </div>
                 </div>
 
-                <div className="flex-1">
-                  <p className="text-sm leading-relaxed text-slate-600">
-                    {resource.description?.trim() || 'Resource details are being maintained by the administration team.'}
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCardClick(resource.id)}
+                  className="mt-auto w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 sm:px-4 sm:text-sm bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30 hover:brightness-105 hover:shadow-xl hover:shadow-violet-500/40 focus:outline-none focus:ring-2 focus:ring-violet-400/50"
+                >
+                  View Details
+                </button>
               </div>
             </article>
           )})}
