@@ -70,4 +70,55 @@ public class RegistrationOtpMailService {
                 + "If you did not request this code, please ignore this email.\n\n"
                 + "- UniPilot Team";
     }
+
+    public void sendBookingStatusEmail(String to, String userName, String resourceName, String status, String date, String startTime, String endTime) {
+        if (mailUsername == null || mailUsername.isBlank()) {
+            log.warn("Email service is not configured. Skipping booking status email.");
+            return;
+        }
+
+        // Null safety checks
+        if (to == null || to.isBlank()) {
+            log.warn("Cannot send booking status email: recipient email is null or blank");
+            return;
+        }
+
+        String name = userName == null || userName.trim().isBlank() ? "there" : userName.trim();
+        String formattedStatus = status != null ? status.toUpperCase() : "UPDATED";
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+
+        if (fromAddress != null && !fromAddress.isBlank()) {
+            message.setFrom(fromAddress);
+        }
+
+        message.setSubject("Booking Status Update");
+        message.setText(buildBookingStatusEmailBody(name, resourceName, formattedStatus, date, startTime, endTime));
+
+        try {
+            mailSender.send(message);
+            System.out.println("Sending booking status email to: " + to);
+            log.info("Booking status email sent to {} for resource {}", to, resourceName);
+        } catch (MailException ex) {
+            log.error("Failed to send booking status email to {}: {}", to, ex.getMessage(), ex);
+        }
+    }
+
+    private String buildBookingStatusEmailBody(String userName, String resourceName, String status, String date, String startTime, String endTime) {
+        String resource = resourceName != null ? resourceName : "N/A";
+        String bookingDate = date != null ? date : "N/A";
+        String start = startTime != null ? startTime : "N/A";
+        String end = endTime != null ? endTime : "N/A";
+        
+        String statusWithEmoji = "APPROVED".equals(status) ? "APPROVED ✅" : "REJECTED ⛔";
+
+        return "👋 Hello " + userName + ",\n\n"
+                + "Your booking has been " + statusWithEmoji + "\n\n"
+                + "Resource: " + resource + "\n"
+                + "Date: " + bookingDate + "\n"
+                + "Time: " + start + " - " + end + "\n\n"
+                + "Thank you.\n\n"
+                + "🎓 UniPilot Team";
+    }
 }

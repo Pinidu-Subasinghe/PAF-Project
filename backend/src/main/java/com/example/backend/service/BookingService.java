@@ -34,17 +34,20 @@ public class BookingService {
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
     private final NotificationService notificationService;
+    private final RegistrationOtpMailService emailService;
 
     public BookingService(
             BookingRepository bookingRepository,
             UserRepository userRepository,
             ResourceRepository resourceRepository,
-            NotificationService notificationService
+            NotificationService notificationService,
+            RegistrationOtpMailService emailService
     ) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
         this.notificationService = notificationService;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -177,6 +180,9 @@ public class BookingService {
                 "my-bookings"
         );
 
+        // Send email notification to user
+        sendBookingStatusEmail(booking, "APPROVED");
+
         return toResponse(saved);
     }
 
@@ -204,7 +210,38 @@ public class BookingService {
                 "my-bookings"
         );
 
+        // Send email notification to user
+        sendBookingStatusEmail(booking, "REJECTED");
+
         return toResponse(saved);
+    }
+
+    private void sendBookingStatusEmail(Booking booking, String status) {
+        try {
+            // Get user by ID
+            AppUser user = userRepository.findById(booking.getUserId()).orElse(null);
+            
+            if (user != null && user.getEmail() != null) {
+                // Get resource name by fetching resource
+                Resource resource = resourceRepository.findById(booking.getResourceId()).orElse(null);
+                String resourceName = (resource != null) ? resource.getName() : "N/A";
+                
+                emailService.sendBookingStatusEmail(
+                        user.getEmail(),
+                        user.getFullName(),
+                        resourceName,
+                        status,
+                        booking.getDate().toString(),
+                        booking.getStartTime().toString(),
+                        booking.getEndTime().toString()
+                );
+            } else {
+                System.out.println("Cannot send email: User or email not found for booking " + booking.getId());
+            }
+        } catch (Exception e) {
+            System.out.println("Failed to send booking status email: " + e.getMessage());
+            // Don't throw exception - email failure should not break booking approval/rejection
+        }
     }
 
     @Transactional
